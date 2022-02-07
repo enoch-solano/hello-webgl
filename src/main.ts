@@ -17,6 +17,7 @@ const controls = {
     red: 255,
     green: 0,
     blue: 0,
+    'Surface Shader': 0,
 };
 
 let icosphere: Icosphere;
@@ -26,6 +27,10 @@ let prevTesselations: number = 5;
 let prevRed: number = 255;
 let prevGreen: number = 0;
 let prevBlue: number = 0;
+let prevSurfaceShader: number = 0;
+
+let currentShader: ShaderProgram;
+let surfaceShaders: Array<ShaderProgram> = [];
 
 function loadScene() {
     icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
@@ -45,11 +50,16 @@ function main() {
 
     // Add controls to the gui
     const gui = new DAT.GUI();
-    gui.add(controls, 'tesselations', 0, 8).step(1);
     gui.add(controls, 'Load Scene');
-    gui.add(controls, 'red', 0, 255).step(1);
-    gui.add(controls, 'green', 0, 255).step(1);
-    gui.add(controls, 'blue', 0, 255).step(1);
+    gui.add(controls, 'tesselations', 0, 8).step(1);
+    gui.add(controls, 'Surface Shader', {'Lambert': 0, 
+                                         'Noisy Color': 1,
+                                         'Vertex Deformator': 2 });
+
+    let colorModifiers = gui.addFolder("Modify Color");
+    colorModifiers.add(controls, 'red', 0, 255).step(1);
+    colorModifiers.add(controls, 'green', 0, 255).step(1);
+    colorModifiers.add(controls, 'blue', 0, 255).step(1);
 
     // get canvas and webgl context
     const canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -57,6 +67,7 @@ function main() {
     if (!gl) {
         alert('WebGL 2 not supported!');
     }
+
     // `setGL` is a function imported above which sets the value of `gl` in the `globals.ts` module.
     // Later, we can import `gl` from `globals.ts` to access it
     setGL(gl);
@@ -70,10 +81,29 @@ function main() {
     renderer.setClearColor(0.2, 0.2, 0.2, 1);
     gl.enable(gl.DEPTH_TEST);
 
+    // set up shaders
     const lambert = new ShaderProgram([
         new Shader(gl.VERTEX_SHADER, require('./shaders/lambert-vert.glsl')),
         new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
     ]);
+
+    const noisyColor = new ShaderProgram([
+        new Shader(gl.VERTEX_SHADER, require('./shaders/noisy-color-vert.glsl')),
+        new Shader(gl.FRAGMENT_SHADER, require('./shaders/noisy-color-frag.glsl')),
+    ]);
+
+    const vertexDeformator = new ShaderProgram([
+        new Shader(gl.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl')),
+        new Shader(gl.FRAGMENT_SHADER, require('./shaders/vertex-deformator-frag.glsl')),
+    ]);
+
+    lambert.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
+
+    surfaceShaders.push(lambert);
+    surfaceShaders.push(noisyColor);
+    surfaceShaders.push(vertexDeformator);
+
+    currentShader = surfaceShaders[0];
 
     // This function will be called every frame
     function tick() {
@@ -84,6 +114,7 @@ function main() {
 
         if (controls.tesselations != prevTesselations) {
             prevTesselations = controls.tesselations;
+
             icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
             icosphere.create();
         }
@@ -93,12 +124,18 @@ function main() {
             prevGreen = controls.green;
             prevBlue = controls.blue;
     
-            console.log("updating rgb values");
-    
-            lambert.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
+            currentShader.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
 
-        renderer.render(camera, lambert, [
+        if (controls['Surface Shader'] != prevSurfaceShader) {
+            prevSurfaceShader = controls['Surface Shader'];
+
+            // TODO: change the shader
+            console.log(controls['Surface Shader']);
+            currentShader = surfaceShaders[controls['Surface Shader']];
+        }
+
+        renderer.render(camera, currentShader, [
             icosphere,
             // square,
         ]);
