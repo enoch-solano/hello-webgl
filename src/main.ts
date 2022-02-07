@@ -1,4 +1,5 @@
 import { vec3 } from 'gl-matrix';
+import { vec4 } from 'gl-matrix';
 const Stats = require('stats-js');
 import * as DAT from 'dat.gui';
 import Icosphere from './geometry/Icosphere';
@@ -13,11 +14,18 @@ import ShaderProgram, { Shader } from './rendering/gl/ShaderProgram';
 const controls = {
     tesselations: 5,
     'Load Scene': loadScene, // A function pointer, essentially
+    red: 255,
+    green: 0,
+    blue: 0,
 };
 
 let icosphere: Icosphere;
 let square: Square;
 let prevTesselations: number = 5;
+
+let prevRed: number = 255;
+let prevGreen: number = 0;
+let prevBlue: number = 0;
 
 function loadScene() {
     icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
@@ -39,6 +47,9 @@ function main() {
     const gui = new DAT.GUI();
     gui.add(controls, 'tesselations', 0, 8).step(1);
     gui.add(controls, 'Load Scene');
+    gui.add(controls, 'red', 0, 255).step(1);
+    gui.add(controls, 'green', 0, 255).step(1);
+    gui.add(controls, 'blue', 0, 255).step(1);
 
     // get canvas and webgl context
     const canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -70,11 +81,23 @@ function main() {
         stats.begin();
         gl.viewport(0, 0, window.innerWidth, window.innerHeight);
         renderer.clear();
+
         if (controls.tesselations != prevTesselations) {
             prevTesselations = controls.tesselations;
             icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
             icosphere.create();
         }
+
+        if (controls.red != prevRed || controls.green != prevGreen || controls.blue != prevBlue) {
+            prevRed = controls.red;
+            prevGreen = controls.green;
+            prevBlue = controls.blue;
+    
+            console.log("updating rgb values");
+    
+            lambert.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
+        }
+
         renderer.render(camera, lambert, [
             icosphere,
             // square,
