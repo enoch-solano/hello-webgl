@@ -98,6 +98,8 @@ function main() {
     ]);
 
     lambert.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
+    noisyColor.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
+    vertexDeformator.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
 
     surfaceShaders.push(lambert);
     surfaceShaders.push(noisyColor);
@@ -127,11 +129,10 @@ function main() {
             currentShader.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
 
+        // updates current shader
         if (controls['Surface Shader'] != prevSurfaceShader) {
             prevSurfaceShader = controls['Surface Shader'];
 
-            // TODO: change the shader
-            console.log(controls['Surface Shader']);
             currentShader = surfaceShaders[controls['Surface Shader']];
         }
 
