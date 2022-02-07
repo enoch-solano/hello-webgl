@@ -26,59 +26,79 @@ out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
 
 
-vec3 random3(vec3 p) {
-    return fract(sin(vec3(dot(p, vec3(127.1f, 311.7f, 420.69f)),
-                          dot(p, vec3(269.5f, 183.3f, 632.897f)),
-                          dot(p - vec3(5.555, 10.95645, 70.266), vec3(765.54f, 631.2f, 109.21f)))) * 43758.5453f);
+vec2 random2(vec3 p) {
+    return fract(sin(vec2(dot(p, vec3(127.1f, 311.7f, 420.69f)),
+                          dot(p, vec3(269.5f, 183.3f, 632.897f)))) * 43758.5453f);
+}
+
+float random1(vec2 p) {
+    return fract(sin(dot(p, vec2(420.6f, 631.2f)))*43758.5453f);
+}
+
+float random1(vec3 p) {
+    return random1(random2(p));
 }
 
 float fade(float t) {
     return t * t * t * ( t * (6.f*t - 15.f) + 10.f );
 }
 
-float surflet(vec3 P, vec3 Gp_ijk) {
-    // Get the vector from the grid point to P
-    vec3 diff = P - Gp_ijk;
-    
-    float tX = 1.f - fade(abs(diff.x));
-    float tY = 1.f - fade(abs(diff.y));
-    float tZ = 1.f - fade(abs(diff.z));
-    
-    // Get the random vector for the grid point
-    vec3 gradient = random3(Gp_ijk);
-    
-    
-    // Get the noise contribution from this grid point
-    float n_ijk = dot(diff, gradient);
-    
-    // Get the interpolated noise contribution frmo this grid point
-    return n_ijk * tX * tY * tZ;
+float smoothStep(float a, float b, float t) {
+    t = t * t * (3.0 - 2.0 * t);
+    return mix(a, b, t);
 }
 
-float perlinNoise(vec3 P, float samplingFreq) {
+float bilerpNoise(vec3 P, float samplingFreq) {
     P = P * samplingFreq;
-    
-    float sum = 0.f;
+
+    vec3 uvw = fract(P);
+
     vec3 Gp = floor(P);
+
+    // grid points
+    vec3 Gp000 = Gp;
+    vec3 Gp010 = Gp + vec3(0,1,0);
+    vec3 Gp001 = Gp + vec3(0,0,1);
+    vec3 Gp011 = Gp + vec3(0,1,1);
     
-    for (int x = 0; x <= 1; x++) {
-        for (int y = 0; y <= 1; y++) {
-            for (int z = 0; z <= 1; z++) {
-                sum += surflet(P, Gp + vec3(x, y, z));
-            }
-        }
-    }
+    vec3 Gp100 = Gp + vec3(1,0,0);
+    vec3 Gp110 = Gp + vec3(1,1,0);
+    vec3 Gp101 = Gp + vec3(1,0,1);
+    vec3 Gp111 = Gp + vec3(1,1,1);
+
+    // noise contribution from each grid point
+    float n000 = random1(Gp000);
+    float n010 = random1(Gp010);
+    float n001 = random1(Gp001);
+    float n011 = random1(Gp011);
+    float n100 = random1(Gp100);
+    float n110 = random1(Gp110);
+    float n101 = random1(Gp101);
+    float n111 = random1(Gp111);
+
+    // Interpolate along x the contributions from each of the corners
+    float nx00 = smoothStep(n000, n100, uvw.x);
+    float nx10 = smoothStep(n010, n110, uvw.x);
+    float nx01 = smoothStep(n001, n101, uvw.x);
+    float nx11 = smoothStep(n011, n111, uvw.x);
     
-    return sum;
+    // Interpolate the four results along y
+    float nxy0 = smoothStep(nx00, nx10, uvw.y);
+    float nxy1 = smoothStep(nx01, nx11, uvw.y);
+    
+    // Interpolate the two last results along z
+    float nxyz = smoothStep(nxy0, nxy1, uvw.z);
+
+    return nxyz;
 }
 
-float fractalPerlin(vec3 P, int octaves) {
+float fbm(vec3 P, int octaves) {
     float amp = 0.5;
     float freq = 4.0;
     float sum = 0.0;
 
     for (int i = 0; i < octaves; i++) {
-        sum += (1.0 - abs(perlinNoise(P, freq))) * amp;
+        sum += bilerpNoise(P, freq) * amp;
         amp *= 0.5;
         freq *= 2.0;
     }
@@ -86,11 +106,12 @@ float fractalPerlin(vec3 P, int octaves) {
     return sum;
 }
 
-void main() {
+void main()
+{
     float time = float(u_Time) * 0.003;
     vec3 P = vec3(fs_Pos.xy, fs_Pos.z + time);
 
-    float amount = fractalPerlin(P, 6);
+    float amount = fbm(P, 4);
     vec3 diffuseColor = mix(vec3(0), u_Color.rgb, amount);
 
     // Calculate the diffuse term for Lambert shading
@@ -105,5 +126,5 @@ void main() {
                                                             //lit by our point light are not completely black.
 
     // Compute final shaded color
-    out_Col = vec4(diffuseColor.rgb * lightIntensity, 1);
+    out_Col = vec4(diffuseColor * lightIntensity, 1);
 }

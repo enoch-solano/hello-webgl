@@ -14,9 +14,9 @@ import ShaderProgram, { Shader } from './rendering/gl/ShaderProgram';
 const controls = {
     tesselations: 5,
     'Load Scene': loadScene, // A function pointer, essentially
-    red: 255,
-    green: 0,
-    blue: 0,
+    red: 212,
+    green: 100,
+    blue: 100,
     'Surface Shader': 0,
 };
 
@@ -24,9 +24,9 @@ let icosphere: Icosphere;
 let square: Square;
 let prevTesselations: number = 5;
 
-let prevRed: number = 255;
-let prevGreen: number = 0;
-let prevBlue: number = 0;
+let prevRed: number = 212;
+let prevGreen: number = 100;
+let prevBlue: number = 100;
 let prevSurfaceShader: number = 0;
 
 let currentShader: ShaderProgram;
@@ -56,7 +56,8 @@ function main() {
     gui.add(controls, 'tesselations', 0, 8).step(1);
     gui.add(controls, 'Surface Shader', {'Lambert': 0, 
                                          'Noisy Color': 1,
-                                         'Vertex Deformator': 2 });
+                                         'Vertex Deformator': 2,
+                                         'FBM Noisy Color': 3 });
 
     let colorModifiers = gui.addFolder("Modify Color");
     colorModifiers.add(controls, 'red', 0, 255).step(1);
@@ -99,13 +100,20 @@ function main() {
         new Shader(gl.FRAGMENT_SHADER, require('./shaders/vertex-deformator-frag.glsl')),
     ]);
 
+    const fbmNoisyColor = new ShaderProgram([
+        new Shader(gl.VERTEX_SHADER, require('./shaders/fbm-noisy-color-vert.glsl')),
+        new Shader(gl.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl')),
+    ]);
+
     lambert.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
     noisyColor.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
     vertexDeformator.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
+    fbmNoisyColor.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
 
     surfaceShaders.push(lambert);
     surfaceShaders.push(noisyColor);
     surfaceShaders.push(vertexDeformator);
+    surfaceShaders.push(fbmNoisyColor);
 
     currentShader = surfaceShaders[0];
 
