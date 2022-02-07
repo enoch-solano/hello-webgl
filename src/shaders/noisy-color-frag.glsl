@@ -13,6 +13,8 @@ precision highp float;
 
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
 
+uniform int u_Time;
+
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
 in vec4 fs_Nor;
@@ -67,7 +69,6 @@ float perlinNoise(vec3 P, float samplingFreq) {
         }
     }
     
-    
     return sum;
 }
 
@@ -87,7 +88,10 @@ float fractalPerlin(vec3 P, int octaves) {
 
 void main()
 {
-    float amount = fractalPerlin(fs_Pos.xyz, 6);
+    float time = float(u_Time) * 0.003;
+    vec3 P = vec3(fs_Pos.xy, fs_Pos.z + time);
+
+    float amount = fractalPerlin(P, 6);
     vec3 color = mix(vec3(0), u_Color.rgb, amount);
 
     // Compute final shaded color

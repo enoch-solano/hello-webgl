@@ -32,6 +32,8 @@ let prevSurfaceShader: number = 0;
 let currentShader: ShaderProgram;
 let surfaceShaders: Array<ShaderProgram> = [];
 
+let timeCounter: number = 0;
+
 function loadScene() {
     icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
     icosphere.create();
@@ -135,6 +137,9 @@ function main() {
 
             currentShader = surfaceShaders[controls['Surface Shader']];
         }
+
+        currentShader.setTime(timeCounter);
+        timeCounter++;
 
         renderer.render(camera, currentShader, [
             icosphere,
