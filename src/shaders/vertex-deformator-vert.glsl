@@ -48,6 +48,15 @@ void main()
 
     vec4 modelposition = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below
 
+    float timeStep = 0.05 * float(u_Time);
+
+    vec3 amp = vec3(0.1, 0, 0);
+    vec3 freq = vec3(4.0 * sin(0.1 * timeStep), 0, 0);
+    vec3 theta = vec3(timeStep, 0, 0);
+
+    vec3 offset = amp * sin(freq * modelposition.xyz + theta);
+    modelposition += vec4(offset, 0);
+
     fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
 
     gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is

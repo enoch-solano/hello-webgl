@@ -103,7 +103,7 @@ float fbm(vec3 P, int octaves) {
         freq *= 2.0;
     }
 
-    return sum;
+    return sum + 0.5;
 }
 
 void main()

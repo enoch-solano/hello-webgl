@@ -18,11 +18,13 @@ const controls = {
     green: 100,
     blue: 100,
     'Surface Shader': 0,
+    'Ticker Speed': 1,
 };
 
 let icosphere: Icosphere;
 let square: Square;
 let prevTesselations: number = 5;
+let prevTickerSpeed: number = 1;
 
 let prevRed: number = 212;
 let prevGreen: number = 100;
@@ -54,10 +56,12 @@ function main() {
     const gui = new DAT.GUI();
     gui.add(controls, 'Load Scene');
     gui.add(controls, 'tesselations', 0, 8).step(1);
+    gui.add(controls, 'Ticker Speed', 0, 5).step(1);
     gui.add(controls, 'Surface Shader', {'Lambert': 0, 
                                          'Noisy Color': 1,
                                          'Vertex Deformator': 2,
                                          'FBM Noisy Color': 3 });
+    
 
     let colorModifiers = gui.addFolder("Modify Color");
     colorModifiers.add(controls, 'red', 0, 255).step(1);
@@ -135,8 +139,10 @@ function main() {
             prevRed = controls.red;
             prevGreen = controls.green;
             prevBlue = controls.blue;
-    
-            currentShader.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
+
+            for (let surfaceShader of surfaceShaders) {
+                surfaceShader.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
+            }
         }
 
         // updates current shader
@@ -147,7 +153,7 @@ function main() {
         }
 
         currentShader.setTime(timeCounter);
-        timeCounter++;
+        timeCounter += controls['Ticker Speed'];
 
         renderer.render(camera, currentShader, [
             icosphere,
