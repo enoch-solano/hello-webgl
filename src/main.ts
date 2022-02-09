@@ -24,7 +24,6 @@ const controls = {
 let icosphere: Icosphere;
 let square: Square;
 let prevTesselations: number = 5;
-let prevTickerSpeed: number = 1;
 
 let prevRed: number = 212;
 let prevGreen: number = 100;
@@ -59,8 +58,9 @@ function main() {
     gui.add(controls, 'Ticker Speed', 0, 5).step(1);
     gui.add(controls, 'Surface Shader', {'Lambert': 0, 
                                          'Noisy Color': 1,
-                                         'Vertex Deformator': 2,
-                                         'FBM Noisy Color': 3 });
+                                         'FBM Noisy Color': 2,
+                                         'Vertex Deformator': 3,
+                                         'Twist Deformator': 4, });
     
 
     let colorModifiers = gui.addFolder("Modify Color");
@@ -99,27 +99,32 @@ function main() {
         new Shader(gl.FRAGMENT_SHADER, require('./shaders/noisy-color-frag.glsl')),
     ]);
 
-    const vertexDeformator = new ShaderProgram([
-        new Shader(gl.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl')),
-        new Shader(gl.FRAGMENT_SHADER, require('./shaders/vertex-deformator-frag.glsl')),
-    ]);
-
     const fbmNoisyColor = new ShaderProgram([
         new Shader(gl.VERTEX_SHADER, require('./shaders/fbm-noisy-color-vert.glsl')),
         new Shader(gl.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl')),
     ]);
 
-    lambert.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
-    noisyColor.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
-    vertexDeformator.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
-    fbmNoisyColor.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
+    const vertexDeformator = new ShaderProgram([
+        new Shader(gl.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl')),
+        new Shader(gl.FRAGMENT_SHADER, require('./shaders/vertex-deformator-frag.glsl')),
+    ]);
+
+    const twistDeformator = new ShaderProgram([
+        new Shader(gl.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl')),
+        new Shader(gl.FRAGMENT_SHADER, require('./shaders/twist-deformator-frag.glsl')),
+    ]);
 
     surfaceShaders.push(lambert);
     surfaceShaders.push(noisyColor);
-    surfaceShaders.push(vertexDeformator);
     surfaceShaders.push(fbmNoisyColor);
+    surfaceShaders.push(vertexDeformator);
+    surfaceShaders.push(twistDeformator);
 
     currentShader = surfaceShaders[0];
+
+    for (let surfaceShader of surfaceShaders) {
+        surfaceShader.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
+    }
 
     // This function will be called every frame
     function tick() {
@@ -128,6 +133,7 @@ function main() {
         gl.viewport(0, 0, window.innerWidth, window.innerHeight);
         renderer.clear();
 
+        // updates nunber of tesselations of icosphere
         if (controls.tesselations != prevTesselations) {
             prevTesselations = controls.tesselations;
 
@@ -135,6 +141,7 @@ function main() {
             icosphere.create();
         }
 
+        // updates the geometry color
         if (controls.red != prevRed || controls.green != prevGreen || controls.blue != prevBlue) {
             prevRed = controls.red;
             prevGreen = controls.green;
@@ -152,6 +159,7 @@ function main() {
             currentShader = surfaceShaders[controls['Surface Shader']];
         }
 
+        // updates the current time
         currentShader.setTime(timeCounter);
         timeCounter += controls['Ticker Speed'];
 
