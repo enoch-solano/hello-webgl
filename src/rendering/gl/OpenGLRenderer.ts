@@ -23,12 +23,9 @@ class OpenGLRenderer {
     }
 
     render(camera: Camera, prog: ShaderProgram, drawables: Array<Drawable>) {
-        let model = mat4.create();
         let viewProj = mat4.create();
 
-        mat4.identity(model);
         mat4.multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
-        prog.setModelMatrix(model);
         prog.setViewProjMatrix(viewProj);
 
         for (let drawable of drawables) {

@@ -1,5 +1,6 @@
 import { vec3 } from 'gl-matrix';
 import { vec4 } from 'gl-matrix';
+import { mat4 } from 'gl-matrix';
 const Stats = require('stats-js');
 import * as DAT from 'dat.gui';
 import Icosphere from './geometry/Icosphere';
@@ -19,6 +20,9 @@ const controls = {
     blue: 100,
     'Surface Shader': 0,
     'Ticker Speed': 1,
+    'x-Scale': 1.0,
+    'y-Scale': 1.0,
+    'z-Scale': 1.0,
 };
 
 let icosphere: Icosphere;
@@ -28,12 +32,16 @@ let prevTesselations: number = 5;
 let prevRed: number = 212;
 let prevGreen: number = 100;
 let prevBlue: number = 100;
+
 let prevSurfaceShader: number = 0;
 
 let currentShader: ShaderProgram;
 let surfaceShaders: Array<ShaderProgram> = [];
 
 let timeCounter: number = 0;
+
+let scaleVec: vec3 = vec3.fromValues(1, 1, 1);
+let scaleMat: mat4 = mat4.create();
 
 function loadScene() {
     icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
@@ -67,6 +75,11 @@ function main() {
     colorModifiers.add(controls, 'red', 0, 255).step(1);
     colorModifiers.add(controls, 'green', 0, 255).step(1);
     colorModifiers.add(controls, 'blue', 0, 255).step(1);
+
+    let scaleModifiers = gui.addFolder("Scale Geometry");
+    scaleModifiers.add(controls, 'x-Scale', 0, 3).step(0.05);
+    scaleModifiers.add(controls, 'y-Scale', 0, 3).step(0.05);
+    scaleModifiers.add(controls, 'z-Scale', 0, 3).step(0.05);
 
     // get canvas and webgl context
     const canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -162,6 +175,11 @@ function main() {
         // updates the current time
         currentShader.setTime(timeCounter);
         timeCounter += controls['Ticker Speed'];
+
+        // updates scale matrix
+        scaleVec = vec3.fromValues(controls['x-Scale'], controls['y-Scale'], controls['z-Scale']);
+        mat4.fromScaling(scaleMat, scaleVec);
+        currentShader.setModelMatrix(scaleMat);
 
         renderer.render(camera, currentShader, [
             icosphere,

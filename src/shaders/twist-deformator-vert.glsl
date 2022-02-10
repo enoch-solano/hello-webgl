@@ -46,28 +46,22 @@ void main()
                                                             // the model matrix.
 
 
-    vec4 pos = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below
-
-    mat4 scale = mat4(1);
-    scale[0][0] = 0.5;
-    scale[1][1] = 2.0;
-
-    pos = scale * pos;
+    vec4 modelposition = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below
 
     float timeStep = 0.1 * 0.05 * float(u_Time);
 
     float k = 4.0 * sin(timeStep);
-    float theta = k * pos.y;
+    float theta = k * modelposition.y;
 
     float c = cos(theta);
     float s = sin(theta);
 
     mat2 rot = mat2(c, -s, s, c);
 
-    pos = vec4(rot * pos.xz, pos.y, 1);
+    modelposition = vec4(rot * modelposition.xz, modelposition.y, 1);
 
-    fs_LightVec = lightPos - pos;  // Compute the direction in which the light source lies
+    fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
 
-    gl_Position = u_ViewProj * pos;// gl_Position is a built-in variable of OpenGL which is
+    gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is
                                              // used to render the final positions of the geometry's vertices
 }
