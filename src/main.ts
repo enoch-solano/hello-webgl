@@ -50,6 +50,45 @@ function loadScene() {
     square.create();
 }
 
+function initializeShaders(context: WebGL2RenderingContext) {
+    const lambert = new ShaderProgram([
+        new Shader(context.VERTEX_SHADER, require('./shaders/lambert-vert.glsl')),
+        new Shader(context.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
+    ]);
+
+    const noisyColor = new ShaderProgram([
+        new Shader(context.VERTEX_SHADER, require('./shaders/noisy-color-vert.glsl')),
+        new Shader(context.FRAGMENT_SHADER, require('./shaders/noisy-color-frag.glsl')),
+    ]);
+
+    const fbmNoisyColor = new ShaderProgram([
+        new Shader(context.VERTEX_SHADER, require('./shaders/fbm-noisy-color-vert.glsl')),
+        new Shader(context.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl')),
+    ]);
+
+    const worleyoisyColor = new ShaderProgram([
+        new Shader(context.VERTEX_SHADER, require('./shaders/worley-noisy-color-vert.glsl')),
+        new Shader(context.FRAGMENT_SHADER, require('./shaders/worley-noisy-color-frag.glsl')),
+    ]);
+
+    const vertexDeformator = new ShaderProgram([
+        new Shader(context.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl')),
+        new Shader(context.FRAGMENT_SHADER, require('./shaders/vertex-deformator-frag.glsl')),
+    ]);
+
+    const twistDeformator = new ShaderProgram([
+        new Shader(context.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl')),
+        new Shader(context.FRAGMENT_SHADER, require('./shaders/twist-deformator-frag.glsl')),
+    ]);
+
+    surfaceShaders.push(lambert);
+    surfaceShaders.push(noisyColor);
+    surfaceShaders.push(fbmNoisyColor);
+    surfaceShaders.push(worleyoisyColor);
+    surfaceShaders.push(vertexDeformator);
+    surfaceShaders.push(twistDeformator);
+}
+
 function main() {
     // Initial display for framerate
     const stats = Stats();
@@ -67,8 +106,9 @@ function main() {
     gui.add(controls, 'Surface Shader', {'Lambert': 0, 
                                          'Noisy Color': 1,
                                          'FBM Noisy Color': 2,
-                                         'Vertex Deformator': 3,
-                                         'Twist Deformator': 4, });
+                                         'Worley Noisy Color': 3,
+                                         'Vertex Deformator': 4,
+                                         'Twist Deformator': 5, });
     
 
     let colorModifiers = gui.addFolder("Modify Color");
@@ -102,36 +142,7 @@ function main() {
     gl.enable(gl.DEPTH_TEST);
 
     // set up shaders
-    const lambert = new ShaderProgram([
-        new Shader(gl.VERTEX_SHADER, require('./shaders/lambert-vert.glsl')),
-        new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
-    ]);
-
-    const noisyColor = new ShaderProgram([
-        new Shader(gl.VERTEX_SHADER, require('./shaders/noisy-color-vert.glsl')),
-        new Shader(gl.FRAGMENT_SHADER, require('./shaders/noisy-color-frag.glsl')),
-    ]);
-
-    const fbmNoisyColor = new ShaderProgram([
-        new Shader(gl.VERTEX_SHADER, require('./shaders/fbm-noisy-color-vert.glsl')),
-        new Shader(gl.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl')),
-    ]);
-
-    const vertexDeformator = new ShaderProgram([
-        new Shader(gl.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl')),
-        new Shader(gl.FRAGMENT_SHADER, require('./shaders/vertex-deformator-frag.glsl')),
-    ]);
-
-    const twistDeformator = new ShaderProgram([
-        new Shader(gl.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl')),
-        new Shader(gl.FRAGMENT_SHADER, require('./shaders/twist-deformator-frag.glsl')),
-    ]);
-
-    surfaceShaders.push(lambert);
-    surfaceShaders.push(noisyColor);
-    surfaceShaders.push(fbmNoisyColor);
-    surfaceShaders.push(vertexDeformator);
-    surfaceShaders.push(twistDeformator);
+    initializeShaders(gl);
 
     currentShader = surfaceShaders[0];
 

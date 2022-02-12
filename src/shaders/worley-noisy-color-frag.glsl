@@ -25,88 +25,48 @@ in vec4 fs_Pos;
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
 
-
-vec2 random2(vec3 p) {
-    return fract(sin(vec2(dot(p, vec3(127.1f, 311.7f, 420.69f)),
-                          dot(p, vec3(269.5f, 183.3f, 632.897f)))) * 43758.5453f);
+vec3 random3(vec3 p) {
+    return fract(sin(vec3(dot(p, vec3(127.1f, 311.7f, 420.69f)),
+                          dot(p, vec3(269.5f, 183.3f, 632.897f)),
+                          dot(p - vec3(5.555, 10.95645, 70.266), vec3(765.54f, 631.2f, 109.21f)))) * 43758.5453f);
 }
 
-float random1(vec2 p) {
-    return fract(sin(dot(p, vec2(420.6f, 631.2f)))*43758.5453f);
-}
-
-float random1(vec3 p) {
-    return random1(random2(p));
-}
-
-float smoothStep(float a, float b, float t) {
-    t = t * t * t * ( t * (6.f*t - 15.f) + 10.f );
-    return mix(a, b, t);
-}
-
-float bilerpNoise(vec3 P, float samplingFreq) {
+float worleyNoise(vec3 P, float samplingFreq) {
     P = P * samplingFreq;
 
     // tilespace coords
     vec3 uvw = fract(P);
-    vec3 Gp = floor(P);
+    vec3 Gp  = floor(P);
 
-    // grid points
-    vec3 Gp000 = Gp;
-    vec3 Gp010 = Gp + vec3(0,1,0);
-    vec3 Gp001 = Gp + vec3(0,0,1);
-    vec3 Gp011 = Gp + vec3(0,1,1);
-    
-    vec3 Gp100 = Gp + vec3(1,0,0);
-    vec3 Gp110 = Gp + vec3(1,1,0);
-    vec3 Gp101 = Gp + vec3(1,0,1);
-    vec3 Gp111 = Gp + vec3(1,1,1);
+    // set minDist to max value
+    float minDist = 2.0;
 
-    // noise contribution from each grid point
-    float n000 = random1(Gp000);
-    float n010 = random1(Gp010);
-    float n001 = random1(Gp001);
-    float n011 = random1(Gp011);
-    float n100 = random1(Gp100);
-    float n110 = random1(Gp110);
-    float n101 = random1(Gp101);
-    float n111 = random1(Gp111);
+    // Search all neighboring cells and this cell for their point
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            for (int z = -1; z <= 1; z++) {
+                vec3 offset = vec3(float(x), float(y), float(z));
 
-    // Interpolate along x the contributions from each of the corners
-    float nx00 = smoothStep(n000, n100, uvw.x);
-    float nx10 = smoothStep(n010, n110, uvw.x);
-    float nx01 = smoothStep(n001, n101, uvw.x);
-    float nx11 = smoothStep(n011, n111, uvw.x);
-    
-    // Interpolate the four results along y
-    float nxy0 = smoothStep(nx00, nx10, uvw.y);
-    float nxy1 = smoothStep(nx01, nx11, uvw.y);
-    
-    // Interpolate the two last results along z
-    float nxyz = smoothStep(nxy0, nxy1, uvw.z);
+                // point in neighbors cell
+                vec3 point = random3(Gp + offset);
 
-    return nxyz;
-}
-
-float fbm(vec3 P, int octaves) {
-    float amp = 0.5;
-    float freq = 4.0;
-    float sum = 0.0;
-
-    for (int i = 0; i < octaves; i++) {
-        sum += bilerpNoise(P, freq) * amp;
-        amp *= 0.5;
-        freq *= 2.0;
+                // compute distance between this frag
+                // and the point generated in neighbor cell
+                vec3 diff = point + offset - uvw;
+                float dist = length(diff);
+                minDist = min(minDist, dist);
+            }
+        }
     }
 
-    return sum + 0.5;
+    return minDist;
 }
 
 void main() {
     float time = float(u_Time) * 0.003;
     vec3 P = vec3(fs_Pos.xy, fs_Pos.z + time);
 
-    float amount = fbm(P, 4);
+    float amount = worleyNoise(P, 4.0);
     vec3 diffuseColor = mix(vec3(0), u_Color.rgb, amount);
 
     // Calculate the diffuse term for Lambert shading

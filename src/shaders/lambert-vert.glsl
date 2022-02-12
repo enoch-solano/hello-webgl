@@ -32,8 +32,7 @@ out vec4 fs_Col;            // The color of each vertex. This is implicitly pass
 const vec4 lightPos = vec4(5, 5, 3, 1); //The position of our virtual light, which is used to compute the shading of
                                         //the geometry in the fragment shader.
 
-void main()
-{
+void main() {
     fs_Col = vs_Col;                         // Pass the vertex colors to the fragment shader for interpolation
 
     mat3 invTranspose = mat3(u_ModelInvTr);
