@@ -15,6 +15,9 @@ uniform vec4 u_Color; // The color with which to render this instance of geometr
 
 uniform int u_Time;
 
+uniform int u_Octaves;  // The number of octaves to compute for fractal noise
+uniform vec2 u_Fractal; // The base frequency and the persistence for fractal noise
+
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
 in vec4 fs_Nor;
@@ -62,11 +65,25 @@ float worleyNoise(vec3 P, float samplingFreq) {
     return minDist;
 }
 
+float fractalWorley(vec3 P, int octaves) {
+    float amp = 0.5;
+    float freq = u_Fractal.x;
+    float sum = 0.0;
+
+    for (int i = 0; i < octaves; i++) {
+        sum += worleyNoise(P, freq) * amp;
+        amp *= u_Fractal.y;
+        freq *= 2.0;
+    }
+
+    return sum + 0.25 + pow(0.25, float(octaves));
+}
+
 void main() {
     float time = float(u_Time) * 0.003;
     vec3 P = vec3(fs_Pos.xy, fs_Pos.z + time);
 
-    float amount = worleyNoise(P, 4.0);
+    float amount = fractalWorley(P, u_Octaves);
     vec3 diffuseColor = mix(vec3(0), u_Color.rgb, amount);
 
     // Calculate the diffuse term for Lambert shading

@@ -15,6 +15,9 @@ uniform vec4 u_Color; // The color with which to render this instance of geometr
 
 uniform int u_Time;
 
+uniform int u_Octaves;  // The number of octaves to compute for fractal noise
+uniform vec2 u_Fractal; // The starting frequency and the persistence for fractal noise
+
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
 in vec4 fs_Nor;
@@ -74,23 +77,23 @@ float perlinNoise(vec3 P, float samplingFreq) {
 
 float fractalPerlin(vec3 P, int octaves) {
     float amp = 0.5;
-    float freq = 4.0;
+    float freq = u_Fractal.x;
     float sum = 0.0;
 
     for (int i = 0; i < octaves; i++) {
         sum += (1.0 - abs(perlinNoise(P, freq))) * amp;
-        amp *= 0.5;
+        amp *= u_Fractal.y;
         freq *= 2.0;
     }
 
-    return sum;
+    return sum + pow(0.5, float(octaves));
 }
 
 void main() {
     float time = float(u_Time) * 0.003;
     vec3 P = vec3(fs_Pos.xy, fs_Pos.z + time);
 
-    float amount = fractalPerlin(P, 6);
+    float amount = fractalPerlin(P, u_Octaves);
     vec3 diffuseColor = mix(vec3(0), u_Color.rgb, amount);
 
     // Calculate the diffuse term for Lambert shading

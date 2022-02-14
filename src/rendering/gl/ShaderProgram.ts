@@ -1,4 +1,4 @@
-import { vec4, mat4 } from 'gl-matrix';
+import { vec2, vec4, mat4 } from 'gl-matrix';
 import Drawable from './Drawable';
 import { gl } from '../../globals';
 
@@ -30,6 +30,9 @@ class ShaderProgram {
     unifViewProj: WebGLUniformLocation;
     unifColor: WebGLUniformLocation;
     unifTime: WebGLUniformLocation;
+    unifWarp: WebGLUniformLocation;
+    unifOctaves: WebGLUniformLocation;
+    unifFractal: WebGLUniformLocation;
 
     constructor(shaders: Array<Shader>) {
         this.prog = gl.createProgram();
@@ -51,6 +54,9 @@ class ShaderProgram {
         this.unifViewProj = gl.getUniformLocation(this.prog, "u_ViewProj");
         this.unifColor = gl.getUniformLocation(this.prog, "u_Color");
         this.unifTime = gl.getUniformLocation(this.prog, "u_Time");
+        this.unifWarp = gl.getUniformLocation(this.prog, "u_Warp");
+        this.unifOctaves = gl.getUniformLocation(this.prog, "u_Octaves");
+        this.unifFractal = gl.getUniformLocation(this.prog, "u_Fractal");
     }
 
     use() {
@@ -62,6 +68,7 @@ class ShaderProgram {
 
     setModelMatrix(model: mat4) {
         this.use();
+
         if (this.unifModel !== -1) {
             gl.uniformMatrix4fv(this.unifModel, false, model);
         }
@@ -95,6 +102,30 @@ class ShaderProgram {
 
         if (this.unifTime !== -1) {
             gl.uniform1i(this.unifTime, time);
+        }
+    }
+
+    setWarp(warp: vec2) {
+        this.use();
+
+        if (this.unifWarp !== -1) {
+            gl.uniform2fv(this.unifWarp, warp);
+        }
+    }
+
+    setOctaves(octaves: number) {
+        this.use();
+
+        if (this.unifOctaves !== -1) {
+            gl.uniform1i(this.unifOctaves, octaves);
+        }
+    }
+
+    setFractal(fractal: vec2) {
+        this.use();
+
+        if (this.unifFractal !== -1) {
+            gl.uniform2fv(this.unifFractal, fractal);
         }
     }
 

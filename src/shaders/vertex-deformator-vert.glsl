@@ -53,6 +53,7 @@ void main() {
     vec3 freq = vec3(4.0 * sin(0.1 * timeStep), 0, 0);
     vec3 theta = vec3(timeStep, 0, 0);
 
+    // offset = A * sin(f * fragPos + t)
     vec3 offset = amp * sin(freq * modelposition.xyz + theta);
     modelposition += vec4(offset, 0);
 

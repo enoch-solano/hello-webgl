@@ -15,6 +15,9 @@ uniform vec4 u_Color; // The color with which to render this instance of geometr
 
 uniform int u_Time;
 
+uniform int u_Octaves;  // The number of octaves to compute for fractal noise
+uniform vec2 u_Fractal; // The starting frequency and the persistence for fractal noise
+
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
 in vec4 fs_Nor;
@@ -44,7 +47,7 @@ float smoothStep(float a, float b, float t) {
     return mix(a, b, t);
 }
 
-float bilerpNoise(vec3 P, float samplingFreq) {
+float brownianMotion(vec3 P, float samplingFreq) {
     P = P * samplingFreq;
 
     // tilespace coords
@@ -53,24 +56,30 @@ float bilerpNoise(vec3 P, float samplingFreq) {
 
     // grid points
     vec3 Gp000 = Gp;
-    vec3 Gp010 = Gp + vec3(0,1,0);
-    vec3 Gp001 = Gp + vec3(0,0,1);
-    vec3 Gp011 = Gp + vec3(0,1,1);
-    
     vec3 Gp100 = Gp + vec3(1,0,0);
+    
+    vec3 Gp010 = Gp + vec3(0,1,0);
     vec3 Gp110 = Gp + vec3(1,1,0);
+
+    vec3 Gp001 = Gp + vec3(0,0,1);
     vec3 Gp101 = Gp + vec3(1,0,1);
+
+    vec3 Gp011 = Gp + vec3(0,1,1);
     vec3 Gp111 = Gp + vec3(1,1,1);
 
     // noise contribution from each grid point
     float n000 = random1(Gp000);
-    float n010 = random1(Gp010);
-    float n001 = random1(Gp001);
-    float n011 = random1(Gp011);
     float n100 = random1(Gp100);
+
+    float n010 = random1(Gp010);
     float n110 = random1(Gp110);
+
+    float n001 = random1(Gp001);
     float n101 = random1(Gp101);
+
+    float n011 = random1(Gp011);
     float n111 = random1(Gp111);
+    
 
     // Interpolate along x the contributions from each of the corners
     float nx00 = smoothStep(n000, n100, uvw.x);
@@ -88,25 +97,26 @@ float bilerpNoise(vec3 P, float samplingFreq) {
     return nxyz;
 }
 
+// fractal brownian motion
 float fbm(vec3 P, int octaves) {
     float amp = 0.5;
-    float freq = 4.0;
+    float freq = u_Fractal.x;
     float sum = 0.0;
 
     for (int i = 0; i < octaves; i++) {
-        sum += bilerpNoise(P, freq) * amp;
-        amp *= 0.5;
+        sum += brownianMotion(P, freq) * amp;
+        amp *= u_Fractal.y;
         freq *= 2.0;
     }
 
-    return sum + 0.5;
+    return sum + 0.25 + pow(0.25, float(octaves));
 }
 
 void main() {
     float time = float(u_Time) * 0.003;
     vec3 P = vec3(fs_Pos.xy, fs_Pos.z + time);
 
-    float amount = fbm(P, 4);
+    float amount = fbm(P, u_Octaves);
     vec3 diffuseColor = mix(vec3(0), u_Color.rgb, amount);
 
     // Calculate the diffuse term for Lambert shading

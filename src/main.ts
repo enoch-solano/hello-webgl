@@ -1,6 +1,4 @@
-import { vec3 } from 'gl-matrix';
-import { vec4 } from 'gl-matrix';
-import { mat4 } from 'gl-matrix';
+import { vec2, vec3, vec4, mat4 } from 'gl-matrix';
 const Stats = require('stats-js');
 import * as DAT from 'dat.gui';
 import Icosphere from './geometry/Icosphere';
@@ -13,25 +11,27 @@ import ShaderProgram, { Shader } from './rendering/gl/ShaderProgram';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
-    tesselations: 5,
+    tesselations: 6,
     'Load Scene': loadScene, // A function pointer, essentially
-    red: 212,
-    green: 100,
-    blue: 100,
+    red: 77,
+    green: 142,
+    blue: 187,
     'Surface Shader': 0,
     'Ticker Speed': 1,
     'x-Scale': 1.0,
     'y-Scale': 1.0,
     'z-Scale': 1.0,
+    'Octaves': 4,
+    'Base Frequency': 1
 };
 
 let icosphere: Icosphere;
 let square: Square;
 let prevTesselations: number = 5;
 
-let prevRed: number = 212;
-let prevGreen: number = 100;
-let prevBlue: number = 100;
+let prevRed: number = 77;
+let prevGreen: number = 142;
+let prevBlue: number = 187;
 
 let prevSurfaceShader: number = 0;
 
@@ -42,6 +42,8 @@ let timeCounter: number = 0;
 
 let scaleVec: vec3 = vec3.fromValues(1, 1, 1);
 let scaleMat: mat4 = mat4.create();
+
+let fractalParams: vec2 = vec2.create();
 
 function loadScene() {
     icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
@@ -56,14 +58,14 @@ function initializeShaders(context: WebGL2RenderingContext) {
         new Shader(context.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
     ]);
 
-    const noisyColor = new ShaderProgram([
-        new Shader(context.VERTEX_SHADER, require('./shaders/noisy-color-vert.glsl')),
-        new Shader(context.FRAGMENT_SHADER, require('./shaders/noisy-color-frag.glsl')),
-    ]);
-
     const fbmNoisyColor = new ShaderProgram([
         new Shader(context.VERTEX_SHADER, require('./shaders/fbm-noisy-color-vert.glsl')),
         new Shader(context.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl')),
+    ]);
+
+    const perlinNoisyColor = new ShaderProgram([
+        new Shader(context.VERTEX_SHADER, require('./shaders/perlin-noisy-color-vert.glsl')),
+        new Shader(context.FRAGMENT_SHADER, require('./shaders/perlin-noisy-color-frag.glsl')),
     ]);
 
     const worleyoisyColor = new ShaderProgram([
@@ -82,8 +84,8 @@ function initializeShaders(context: WebGL2RenderingContext) {
     ]);
 
     surfaceShaders.push(lambert);
-    surfaceShaders.push(noisyColor);
     surfaceShaders.push(fbmNoisyColor);
+    surfaceShaders.push(perlinNoisyColor);
     surfaceShaders.push(worleyoisyColor);
     surfaceShaders.push(vertexDeformator);
     surfaceShaders.push(twistDeformator);
@@ -104,12 +106,12 @@ function main() {
     gui.add(controls, 'tesselations', 0, 8).step(1);
     gui.add(controls, 'Ticker Speed', 0, 5).step(1);
     gui.add(controls, 'Surface Shader', {'Lambert': 0, 
-                                         'Noisy Color': 1,
-                                         'FBM Noisy Color': 2,
+                                         'FBM Noisy Color': 1,
+                                         'Fractal Perlin Noisy Color': 2,
                                          'Worley Noisy Color': 3,
                                          'Vertex Deformator': 4,
                                          'Twist Deformator': 5, });
-    
+
 
     let colorModifiers = gui.addFolder("Modify Color");
     colorModifiers.add(controls, 'red', 0, 255).step(1);
@@ -120,6 +122,10 @@ function main() {
     scaleModifiers.add(controls, 'x-Scale', 0, 3).step(0.05);
     scaleModifiers.add(controls, 'y-Scale', 0, 3).step(0.05);
     scaleModifiers.add(controls, 'z-Scale', 0, 3).step(0.05);
+
+    let noiseModifiers = gui.addFolder("Modify Noise");
+    noiseModifiers.add(controls, 'Octaves', 1, 8).step(1);
+    noiseModifiers.add(controls, 'Base Frequency', 0, 3).step(1);
 
     // get canvas and webgl context
     const canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -191,6 +197,13 @@ function main() {
         scaleVec = vec3.fromValues(controls['x-Scale'], controls['y-Scale'], controls['z-Scale']);
         mat4.fromScaling(scaleMat, scaleVec);
         currentShader.setModelMatrix(scaleMat);
+
+        // updates number of octaves
+        currentShader.setOctaves(controls.Octaves);
+
+        // update fractal parameters
+        fractalParams = vec2.fromValues(Math.pow(2, controls['Base Frequency']), 0.5);
+        currentShader.setFractal(fractalParams);
 
         renderer.render(camera, currentShader, [
             icosphere,
