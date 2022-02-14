@@ -11,18 +11,20 @@ import ShaderProgram, { Shader } from './rendering/gl/ShaderProgram';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
-    tesselations: 6,
+    Tesselations: 6,
     'Load Scene': loadScene, // A function pointer, essentially
     red: 77,
     green: 142,
     blue: 187,
-    'Surface Shader': 0,
-    'Ticker Speed': 1,
+    'Vertex Shader': 0,
+    'Fragment Shader': 0,
+    'Vert Ticker Speed': 1,
+    'Frag Ticker Speed': 1,
     'x-Scale': 1.0,
     'y-Scale': 1.0,
     'z-Scale': 1.0,
     'Octaves': 4,
-    'Base Frequency': 1
+    'Base Frequency': 2,
 };
 
 let icosphere: Icosphere;
@@ -33,12 +35,16 @@ let prevRed: number = 77;
 let prevGreen: number = 142;
 let prevBlue: number = 187;
 
-let prevSurfaceShader: number = 0;
+let prevVertexShader: number = 0;
+let prevFragmentShader: number = 0;
 
-let currentShader: ShaderProgram;
-let surfaceShaders: Array<ShaderProgram> = [];
+let vertexShaders: Array<Shader> = [];
+let fragmentShaders: Array<Shader> = [];
 
-let timeCounter: number = 0;
+let currentShaderProgram: ShaderProgram;
+
+let vertTimeCounter: number = 0;
+let fragTimeCounter: number = 0;
 
 let scaleVec: vec3 = vec3.fromValues(1, 1, 1);
 let scaleMat: mat4 = mat4.create();
@@ -46,49 +52,30 @@ let scaleMat: mat4 = mat4.create();
 let fractalParams: vec2 = vec2.create();
 
 function loadScene() {
-    icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
+    icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.Tesselations);
     icosphere.create();
-    square = new Square(vec3.fromValues(0, 0, 0));
-    square.create();
 }
 
-function initializeShaders(context: WebGL2RenderingContext) {
-    const lambert = new ShaderProgram([
-        new Shader(context.VERTEX_SHADER, require('./shaders/lambert-vert.glsl')),
-        new Shader(context.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
-    ]);
+function initializeVertexShaders(context: WebGL2RenderingContext) {
+    const noop = new Shader(context.VERTEX_SHADER, require('./shaders/lambert-vert.glsl'));
+    const vertexDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl'));
+    const twistDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl'));
 
-    const fbmNoisyColor = new ShaderProgram([
-        new Shader(context.VERTEX_SHADER, require('./shaders/fbm-noisy-color-vert.glsl')),
-        new Shader(context.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl')),
-    ]);
+    vertexShaders.push(noop);
+    vertexShaders.push(vertexDeformator);
+    vertexShaders.push(twistDeformator);
+}
 
-    const perlinNoisyColor = new ShaderProgram([
-        new Shader(context.VERTEX_SHADER, require('./shaders/perlin-noisy-color-vert.glsl')),
-        new Shader(context.FRAGMENT_SHADER, require('./shaders/perlin-noisy-color-frag.glsl')),
-    ]);
+function initializeFragmentShaders(context: WebGL2RenderingContext) {
+    const lambert = new Shader(context.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl'));
+    const fbmNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl'));
+    const perlinNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/perlin-noisy-color-frag.glsl'));
+    const worleyNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/worley-noisy-color-frag.glsl'));
 
-    const worleyoisyColor = new ShaderProgram([
-        new Shader(context.VERTEX_SHADER, require('./shaders/worley-noisy-color-vert.glsl')),
-        new Shader(context.FRAGMENT_SHADER, require('./shaders/worley-noisy-color-frag.glsl')),
-    ]);
-
-    const vertexDeformator = new ShaderProgram([
-        new Shader(context.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl')),
-        new Shader(context.FRAGMENT_SHADER, require('./shaders/vertex-deformator-frag.glsl')),
-    ]);
-
-    const twistDeformator = new ShaderProgram([
-        new Shader(context.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl')),
-        new Shader(context.FRAGMENT_SHADER, require('./shaders/twist-deformator-frag.glsl')),
-    ]);
-
-    surfaceShaders.push(lambert);
-    surfaceShaders.push(fbmNoisyColor);
-    surfaceShaders.push(perlinNoisyColor);
-    surfaceShaders.push(worleyoisyColor);
-    surfaceShaders.push(vertexDeformator);
-    surfaceShaders.push(twistDeformator);
+    fragmentShaders.push(lambert);
+    fragmentShaders.push(fbmNoisyColor);
+    fragmentShaders.push(perlinNoisyColor);
+    fragmentShaders.push(worleyNoisyColor);
 }
 
 function main() {
@@ -103,14 +90,20 @@ function main() {
     // Add controls to the gui
     const gui = new DAT.GUI();
     gui.add(controls, 'Load Scene');
-    gui.add(controls, 'tesselations', 0, 8).step(1);
-    gui.add(controls, 'Ticker Speed', 0, 5).step(1);
-    gui.add(controls, 'Surface Shader', {'Lambert': 0, 
-                                         'FBM Noisy Color': 1,
-                                         'Fractal Perlin Noisy Color': 2,
-                                         'Worley Noisy Color': 3,
-                                         'Vertex Deformator': 4,
-                                         'Twist Deformator': 5, });
+    gui.add(controls, 'Vertex Shader', 
+                        { 'NoOp': 0, 
+                          'Vertex Deformator': 1,
+                          'Twist Deformator': 2, });
+
+    gui.add(controls, 'Fragment Shader', 
+                        { 'Lambert': 0, 
+                          'Fractal Brownian Motion': 1,
+                          'Fractal Perlin Noise': 2,
+                          'Fractal Worley Noise': 3, });
+                      
+    gui.add(controls, 'Tesselations', 0, 8).step(1);
+    gui.add(controls, 'Vert Ticker Speed', 0, 5).step(1);
+    gui.add(controls, 'Frag Ticker Speed', 0, 5).step(1);
 
 
     let colorModifiers = gui.addFolder("Modify Color");
@@ -148,13 +141,12 @@ function main() {
     gl.enable(gl.DEPTH_TEST);
 
     // set up shaders
-    initializeShaders(gl);
+    initializeVertexShaders(gl);
+    initializeFragmentShaders(gl);
 
-    currentShader = surfaceShaders[0];
+    currentShaderProgram = new ShaderProgram([vertexShaders[prevVertexShader], fragmentShaders[prevFragmentShader]]);
+    currentShaderProgram.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
 
-    for (let surfaceShader of surfaceShaders) {
-        surfaceShader.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
-    }
 
     // This function will be called every frame
     function tick() {
@@ -164,11 +156,21 @@ function main() {
         renderer.clear();
 
         // updates nunber of tesselations of icosphere
-        if (controls.tesselations != prevTesselations) {
-            prevTesselations = controls.tesselations;
+        if (controls.Tesselations != prevTesselations) {
+            prevTesselations = controls.Tesselations;
 
             icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, prevTesselations);
             icosphere.create();
+        }
+        
+
+        // updates current shader
+        if (controls['Vertex Shader'] != prevVertexShader || controls['Fragment Shader'] != prevFragmentShader) {
+            prevVertexShader = controls['Vertex Shader'];
+            prevFragmentShader = controls['Fragment Shader'];
+
+            currentShaderProgram = new ShaderProgram([vertexShaders[prevVertexShader], fragmentShaders[prevFragmentShader]]);
+            currentShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
 
         // updates the geometry color
@@ -177,35 +179,29 @@ function main() {
             prevGreen = controls.green;
             prevBlue = controls.blue;
 
-            for (let surfaceShader of surfaceShaders) {
-                surfaceShader.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
-            }
-        }
-
-        // updates current shader
-        if (controls['Surface Shader'] != prevSurfaceShader) {
-            prevSurfaceShader = controls['Surface Shader'];
-
-            currentShader = surfaceShaders[controls['Surface Shader']];
+            currentShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
 
         // updates the current time
-        currentShader.setTime(timeCounter);
-        timeCounter += controls['Ticker Speed'];
+        currentShaderProgram.setVertTime(vertTimeCounter);
+        currentShaderProgram.setFragTime(fragTimeCounter);
+
+        vertTimeCounter += controls['Vert Ticker Speed'];
+        fragTimeCounter += controls['Frag Ticker Speed'];
 
         // updates scale matrix
         scaleVec = vec3.fromValues(controls['x-Scale'], controls['y-Scale'], controls['z-Scale']);
         mat4.fromScaling(scaleMat, scaleVec);
-        currentShader.setModelMatrix(scaleMat);
+        currentShaderProgram.setModelMatrix(scaleMat);
 
         // updates number of octaves
-        currentShader.setOctaves(controls.Octaves);
+        currentShaderProgram.setOctaves(controls.Octaves);
 
         // update fractal parameters
         fractalParams = vec2.fromValues(Math.pow(2, controls['Base Frequency']), 0.5);
-        currentShader.setFractal(fractalParams);
+        currentShaderProgram.setFractal(fractalParams);
 
-        renderer.render(camera, currentShader, [
+        renderer.render(camera, currentShaderProgram, [
             icosphere,
             // square,
         ]);

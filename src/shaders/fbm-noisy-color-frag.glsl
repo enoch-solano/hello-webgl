@@ -13,7 +13,7 @@ precision highp float;
 
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
 
-uniform int u_Time;
+uniform int u_FragTime;
 
 uniform int u_Octaves;  // The number of octaves to compute for fractal noise
 uniform vec2 u_Fractal; // The starting frequency and the persistence for fractal noise
@@ -113,7 +113,7 @@ float fbm(vec3 P, int octaves) {
 }
 
 void main() {
-    float time = float(u_Time) * 0.003;
+    float time = float(u_FragTime) * 0.003;
     vec3 P = vec3(fs_Pos.xy, fs_Pos.z + time);
 
     float amount = fbm(P, u_Octaves);

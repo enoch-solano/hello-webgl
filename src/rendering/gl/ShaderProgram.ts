@@ -30,6 +30,8 @@ class ShaderProgram {
     unifViewProj: WebGLUniformLocation;
     unifColor: WebGLUniformLocation;
     unifTime: WebGLUniformLocation;
+    unifVertTime: WebGLUniformLocation;
+    unifFragTime: WebGLUniformLocation;
     unifWarp: WebGLUniformLocation;
     unifOctaves: WebGLUniformLocation;
     unifFractal: WebGLUniformLocation;
@@ -40,6 +42,7 @@ class ShaderProgram {
         for (let shader of shaders) {
             gl.attachShader(this.prog, shader.shader);
         }
+
         gl.linkProgram(this.prog);
         if (!gl.getProgramParameter(this.prog, gl.LINK_STATUS)) {
             throw gl.getProgramInfoLog(this.prog);
@@ -54,6 +57,8 @@ class ShaderProgram {
         this.unifViewProj = gl.getUniformLocation(this.prog, "u_ViewProj");
         this.unifColor = gl.getUniformLocation(this.prog, "u_Color");
         this.unifTime = gl.getUniformLocation(this.prog, "u_Time");
+        this.unifVertTime = gl.getUniformLocation(this.prog, "u_VertTime");
+        this.unifFragTime = gl.getUniformLocation(this.prog, "u_FragTime");
         this.unifWarp = gl.getUniformLocation(this.prog, "u_Warp");
         this.unifOctaves = gl.getUniformLocation(this.prog, "u_Octaves");
         this.unifFractal = gl.getUniformLocation(this.prog, "u_Fractal");
@@ -102,6 +107,22 @@ class ShaderProgram {
 
         if (this.unifTime !== -1) {
             gl.uniform1i(this.unifTime, time);
+        }
+    }
+
+    setVertTime(time: number) {
+        this.use();
+
+        if (this.unifVertTime !== -1) {
+            gl.uniform1i(this.unifVertTime, time);
+        }
+    }
+
+    setFragTime(time: number) {
+        this.use();
+
+        if (this.unifFragTime !== -1) {
+            gl.uniform1i(this.unifFragTime, time);
         }
     }
 
