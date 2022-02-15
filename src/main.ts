@@ -18,8 +18,8 @@ const controls = {
     blue: 187,
     'Vertex Shader': 0,
     'Fragment Shader': 0,
-    'Vert Ticker Speed': 1,
-    'Frag Ticker Speed': 1,
+    'Vert Tick Speed': 0,
+    'Frag Tick Speed': 0,
     'x-Scale': 1.0,
     'y-Scale': 1.0,
     'z-Scale': 1.0,
@@ -28,8 +28,7 @@ const controls = {
 };
 
 let icosphere: Icosphere;
-let square: Square;
-let prevTesselations: number = 5;
+let prevTesselations: number = 6;
 
 let prevRed: number = 77;
 let prevGreen: number = 142;
@@ -102,8 +101,8 @@ function main() {
                           'Fractal Worley Noise': 3, });
                       
     gui.add(controls, 'Tesselations', 0, 8).step(1);
-    gui.add(controls, 'Vert Ticker Speed', 0, 5).step(1);
-    gui.add(controls, 'Frag Ticker Speed', 0, 5).step(1);
+    gui.add(controls, 'Vert Tick Speed', 0, 5).step(1);
+    gui.add(controls, 'Frag Tick Speed', 0, 5).step(1);
 
 
     let colorModifiers = gui.addFolder("Modify Color");
@@ -112,13 +111,16 @@ function main() {
     colorModifiers.add(controls, 'blue', 0, 255).step(1);
 
     let scaleModifiers = gui.addFolder("Scale Geometry");
-    scaleModifiers.add(controls, 'x-Scale', 0, 3).step(0.05);
-    scaleModifiers.add(controls, 'y-Scale', 0, 3).step(0.05);
-    scaleModifiers.add(controls, 'z-Scale', 0, 3).step(0.05);
+    scaleModifiers.add(controls, 'x-Scale', 0, 3).step(0.1);
+    scaleModifiers.add(controls, 'y-Scale', 0, 3).step(0.1);
+    scaleModifiers.add(controls, 'z-Scale', 0, 3).step(0.1);
 
     let noiseModifiers = gui.addFolder("Modify Noise");
     noiseModifiers.add(controls, 'Octaves', 1, 8).step(1);
     noiseModifiers.add(controls, 'Base Frequency', 0, 3).step(1);
+
+    // increase width of gui
+    gui.width += 25;
 
     // get canvas and webgl context
     const canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -186,8 +188,8 @@ function main() {
         currentShaderProgram.setVertTime(vertTimeCounter);
         currentShaderProgram.setFragTime(fragTimeCounter);
 
-        vertTimeCounter += controls['Vert Ticker Speed'];
-        fragTimeCounter += controls['Frag Ticker Speed'];
+        vertTimeCounter += controls['Vert Tick Speed'];
+        fragTimeCounter += controls['Frag Tick Speed'];
 
         // updates scale matrix
         scaleVec = vec3.fromValues(controls['x-Scale'], controls['y-Scale'], controls['z-Scale']);
