@@ -2,7 +2,6 @@ import { vec2, vec3, vec4, mat4 } from 'gl-matrix';
 const Stats = require('stats-js');
 import * as DAT from 'dat.gui';
 import Icosphere from './geometry/Icosphere';
-import Square from './geometry/Square';
 import OpenGLRenderer from './rendering/gl/OpenGLRenderer';
 import Camera from './Camera';
 import { setGL } from './globals';
@@ -18,8 +17,8 @@ const controls = {
     blue: 187,
     'Vertex Shader': 0,
     'Fragment Shader': 0,
-    'Vert Tick Speed': 0,
-    'Frag Tick Speed': 0,
+    'Vert Tick Speed': 1,
+    'Frag Tick Speed': 1,
     'x-Scale': 1.0,
     'y-Scale': 1.0,
     'z-Scale': 1.0,
