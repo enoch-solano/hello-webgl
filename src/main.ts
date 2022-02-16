@@ -114,9 +114,9 @@ function main() {
     scaleModifiers.add(controls, 'y-Scale', 0, 3).step(0.1);
     scaleModifiers.add(controls, 'z-Scale', 0, 3).step(0.1);
 
-    let noiseModifiers = gui.addFolder("Modify Noise");
-    noiseModifiers.add(controls, 'Octaves', 1, 8).step(1);
-    noiseModifiers.add(controls, 'Base Frequency', 0, 3).step(1);
+    let fractalNoiseModifiers = gui.addFolder("Modify Fractal Noise");
+    fractalNoiseModifiers.add(controls, 'Octaves', 1, 8).step(1);
+    fractalNoiseModifiers.add(controls, 'Base Frequency', 0, 3).step(1);
 
     // increase width of gui
     gui.width += 25;
