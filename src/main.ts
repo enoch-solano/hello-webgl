@@ -58,22 +58,24 @@ function initializeVertexShaders(context: WebGL2RenderingContext) {
     const noop = new Shader(context.VERTEX_SHADER, require('./shaders/lambert-vert.glsl'));
     const vertexDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl'));
     const twistDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl'));
-    const planetShader = new Shader(context.VERTEX_SHADER, require('./shaders/planet-vert.glsl'));
+    const bumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/bump-map-vert.glsl'));
 
     vertexShaders.push(noop);
     vertexShaders.push(vertexDeformator);
     vertexShaders.push(twistDeformator);
-    vertexShaders.push(planetShader);
+    vertexShaders.push(bumpMap);
 }
 
 function initializeFragmentShaders(context: WebGL2RenderingContext) {
     const lambert = new Shader(context.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl'));
+    const blinnPhong = new Shader(context.FRAGMENT_SHADER, require('./shaders/blinn-phong-frag.glsl'));
     const normal = new Shader(context.FRAGMENT_SHADER, require('./shaders/normal-viewer-frag.glsl'));
     const fbmNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl'));
     const perlinNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/perlin-noisy-color-frag.glsl'));
     const worleyNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/worley-noisy-color-frag.glsl'));
 
     fragmentShaders.push(lambert);
+    fragmentShaders.push(blinnPhong);
     fragmentShaders.push(normal);
     fragmentShaders.push(fbmNoisyColor);
     fragmentShaders.push(perlinNoisyColor);
@@ -96,14 +98,15 @@ function main() {
                         { 'NoOp': 0, 
                           'Vertex Deformator': 1,
                           'Twist Deformator': 2,
-                          'Planet': 3, });
+                          'Bump Map': 3, });
 
     gui.add(controls, 'Fragment Shader', 
                         { 'Lambert': 0, 
-                          'Normals': 1, 
-                          'Fractal Brownian Motion': 2,
-                          'Fractal Perlin Noise': 3,
-                          'Fractal Worley Noise': 4, });
+                          'Blinn Phong': 1, 
+                          'Normals': 2, 
+                          'Fractal Brownian Motion': 3,
+                          'Fractal Perlin Noise': 4,
+                          'Fractal Worley Noise': 5, });
                       
     gui.add(controls, 'Tesselations', 0, 8).step(1);
     gui.add(controls, 'Vert Tick Speed', 0, 5).step(1);
@@ -207,6 +210,8 @@ function main() {
         // update fractal parameters
         fractalParams = vec2.fromValues(Math.pow(2, controls['Base Frequency']), 0.5);
         currentShaderProgram.setFractal(fractalParams);
+
+        currentShaderProgram.setCamPos(camera.position);
 
         renderer.render(camera, currentShaderProgram, [
             icosphere,

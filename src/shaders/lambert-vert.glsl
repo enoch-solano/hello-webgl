@@ -34,9 +34,6 @@ const vec4 lightPos = vec4(5, 5, 3, 1); //The position of our virtual light, whi
                                         //the geometry in the fragment shader.
 
 void main() {
-    fs_Col = vs_Col;                         // Pass the vertex colors to the fragment shader for interpolation
-    fs_Pos = vs_Pos;
-
     mat3 invTranspose = mat3(u_ModelInvTr);
     fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.
                                                             // Transform the geometry's normals by the inverse transpose of the
@@ -47,7 +44,11 @@ void main() {
 
     vec4 modelposition = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below
 
+
     fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
+    
+    fs_Pos = modelposition;
+    fs_Col = vs_Col;                         // Pass the vertex colors to the fragment shader for interpolation
 
     gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is
                                              // used to render the final positions of the geometry's vertices

@@ -25,10 +25,8 @@ out vec4 fs_Pos;            // The position of each vertex
 const vec4 lightPos = vec4(5, 5, 3, 1); //The position of our virtual light, which is used to compute the shading of
                                         //the geometry in the fragment shader.
 
-float perlinNoise(vec3 P, float samplingFreq);
-
-vec4 calcNor(vec3 nor);
 float f(vec3 pos);
+vec4 calcNor(vec3 nor);
 
 void main() {
     mat3 invTranspose = mat3(u_ModelInvTr);
@@ -55,9 +53,7 @@ void main() {
 
 /********** noise function definitions **********/
 
-vec3 random3(vec3 p);
 float surflet(vec3 P, vec3 Gp_ijk);
-float fade(float t);
 
 float perlinNoise(vec3 P, float samplingFreq) {
     P = P * samplingFreq;
@@ -95,6 +91,16 @@ vec4 calcNor(vec3 nor) {
     return vec4(normalize(nor - dF), 0);
 }
 
+vec3 random3(vec3 p) {
+    return fract(sin(vec3(dot(p, vec3(127.1f, 311.7f, 420.69f)),
+                          dot(p, vec3(269.5f, 183.3f, 632.897f)),
+                          dot(p - vec3(5.555, 10.95645, 70.266), vec3(765.54f, 631.2f, 109.21f)))) * 43758.5453f);
+}
+
+float fade(float t) {
+    return t * t * t * ( t * (6.f*t - 15.f) + 10.f );
+}
+
 float surflet(vec3 P, vec3 Gp_ijk) {
     // Get the vector from the grid point to P
     vec3 diff = P - Gp_ijk;
@@ -112,14 +118,4 @@ float surflet(vec3 P, vec3 Gp_ijk) {
     
     // Get the interpolated noise contribution frmo this grid point
     return n_ijk * tX * tY * tZ;
-}
-
-vec3 random3(vec3 p) {
-    return fract(sin(vec3(dot(p, vec3(127.1f, 311.7f, 420.69f)),
-                          dot(p, vec3(269.5f, 183.3f, 632.897f)),
-                          dot(p - vec3(5.555, 10.95645, 70.266), vec3(765.54f, 631.2f, 109.21f)))) * 43758.5453f);
-}
-
-float fade(float t) {
-    return t * t * t * ( t * (6.f*t - 15.f) + 10.f );
 }

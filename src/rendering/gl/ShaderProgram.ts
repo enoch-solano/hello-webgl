@@ -1,4 +1,4 @@
-import { vec2, vec4, mat4 } from 'gl-matrix';
+import { vec2, vec3, vec4, mat4 } from 'gl-matrix';
 import Drawable from './Drawable';
 import { gl } from '../../globals';
 
@@ -35,6 +35,7 @@ class ShaderProgram {
     unifWarp: WebGLUniformLocation;
     unifOctaves: WebGLUniformLocation;
     unifFractal: WebGLUniformLocation;
+    unifCamPos: WebGLUniformLocation;
 
     constructor(shaders: Array<Shader>) {
         this.prog = gl.createProgram();
@@ -62,6 +63,7 @@ class ShaderProgram {
         this.unifWarp = gl.getUniformLocation(this.prog, "u_Warp");
         this.unifOctaves = gl.getUniformLocation(this.prog, "u_Octaves");
         this.unifFractal = gl.getUniformLocation(this.prog, "u_Fractal");
+        this.unifCamPos =  gl.getUniformLocation(this.prog, "u_CamPos");
     }
 
     use() {
@@ -147,6 +149,14 @@ class ShaderProgram {
 
         if (this.unifFractal !== -1) {
             gl.uniform2fv(this.unifFractal, fractal);
+        }
+    }
+
+    setCamPos(pos: vec3) {
+        this.use();
+
+        if (this.unifCamPos !== -1) {
+            gl.uniform3fv(this.unifCamPos, pos);
         }
     }
 
