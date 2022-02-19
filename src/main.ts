@@ -59,11 +59,13 @@ function initializeVertexShaders(context: WebGL2RenderingContext) {
     const vertexDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/vertex-deformator-vert.glsl'));
     const twistDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl'));
     const bumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/bump-map-vert.glsl'));
+    const crinkledBumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/crinkled-bump-map-vert.glsl'));
 
     vertexShaders.push(noop);
     vertexShaders.push(vertexDeformator);
     vertexShaders.push(twistDeformator);
     vertexShaders.push(bumpMap);
+    vertexShaders.push(crinkledBumpMap);
 }
 
 function initializeFragmentShaders(context: WebGL2RenderingContext) {
@@ -98,7 +100,8 @@ function main() {
                         { 'NoOp': 0, 
                           'Vertex Deformator': 1,
                           'Twist Deformator': 2,
-                          'Bump Map': 3, });
+                          'Bump Map': 3,
+                          'Crinkled Bump Map': 4, });
 
     gui.add(controls, 'Fragment Shader', 
                         { 'Lambert': 0, 
@@ -210,8 +213,6 @@ function main() {
         // update fractal parameters
         fractalParams = vec2.fromValues(Math.pow(2, controls['Base Frequency']), 0.5);
         currentShaderProgram.setFractal(fractalParams);
-
-        currentShaderProgram.setCamPos(camera.position);
 
         renderer.render(camera, currentShaderProgram, [
             icosphere,
