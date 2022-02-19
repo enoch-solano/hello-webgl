@@ -13,6 +13,8 @@ uniform mat4 u_ModelInvTr;  // The inverse transpose of the model matrix.
 
 uniform mat4 u_ViewProj;    // The matrix that defines the camera's transformation
 
+uniform int u_VertTime;
+
 in vec4 vs_Pos;             // The array of vertex positions passed to the shader
 in vec4 vs_Nor;             // The array of vertex normals passed to the shader
 in vec4 vs_Col;             // The array of vertex colors passed to the shader
@@ -25,17 +27,19 @@ out vec4 fs_Pos;            // The position of each vertex
 const vec4 lightPos = vec4(5, 5, 3, 1); 
 
 float f(vec3 pos);      // returns the amount to offset the vertex position
-vec4 calcNor(vec3 nor);
+vec4 calcNor(vec3 pos, vec3 nor);
 
 void main() {
+    vec3 noiseSeed = vs_Pos.xyz + 0.1 * 0.05 * vec3(0, 0, u_VertTime);
+
     // offset the vertex position by the bump map as defined by perlin noise
-    vec4 modelposition = vs_Pos + f(vs_Pos.xyz) * vs_Nor;
+    vec4 modelposition = vs_Pos + f(noiseSeed) * vs_Nor;
     modelposition = u_Model * modelposition;
     fs_Pos = modelposition;
 
     // compute the new normal of the vertex
     mat3 invTranspose = mat3(u_ModelInvTr);
-    fs_Nor = calcNor(invTranspose * vec3(vs_Nor));
+    fs_Nor = calcNor(noiseSeed, invTranspose * vec3(vs_Nor));
 
     // pass on data to be interpolated and passed on to frag shader
     fs_Col = vs_Col;
@@ -73,11 +77,11 @@ float f(vec3 pos) {
 
 // computes the normal as defined here
 // https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch05.html
-vec4 calcNor(vec3 nor) {
-    float F_0 = f(vs_Pos.xyz);
-    float F_x = f(vs_Pos.xyz + vec3(EPSILON, 0, 0));
-    float F_y = f(vs_Pos.xyz + vec3(0, EPSILON, 0));
-    float F_z = f(vs_Pos.xyz + vec3(0, 0, EPSILON));
+vec4 calcNor(vec3 pos, vec3 nor) {
+    float F_0 = f(pos);
+    float F_x = f(pos + vec3(EPSILON, 0, 0));
+    float F_y = f(pos + vec3(0, EPSILON, 0));
+    float F_z = f(pos + vec3(0, 0, EPSILON));
 
     vec3 dF = (vec3(F_x, F_y, F_z) - vec3(F_0)) / EPSILON;
 
