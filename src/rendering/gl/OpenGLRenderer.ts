@@ -27,7 +27,6 @@ class OpenGLRenderer {
 
         mat4.multiply(viewProj, camera.projectionMatrix, camera.viewMatrix);
         prog.setViewProjMatrix(viewProj);
-        prog.setCamPos(camera.position);
 
         for (let drawable of drawables) {
             prog.draw(drawable);

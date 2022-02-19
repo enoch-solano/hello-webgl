@@ -22,33 +22,26 @@ out vec4 fs_LightVec;       // The direction in which our virtual light lies, re
 out vec4 fs_Col;            // The color of each vertex
 out vec4 fs_Pos;            // The position of each vertex
 
-const vec4 lightPos = vec4(5, 5, 3, 1); //The position of our virtual light, which is used to compute the shading of
-                                        //the geometry in the fragment shader.
+const vec4 lightPos = vec4(5, 5, 3, 1); 
 
-float f(vec3 pos);
+float f(vec3 pos);      // returns the amount to offset the vertex position
 vec4 calcNor(vec3 nor);
 
 void main() {
-    mat3 invTranspose = mat3(u_ModelInvTr);
-    fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Transform the geometry's normals by the inverse transpose of the
-                                                            // model matrix. This is necessary to ensure the normals remain
-                                                            // perpendicular to the surface after the surface is transformed by
-                                                            // the model matrix.
-
-
+    // offset the vertex position by the bump map as defined by perlin noise
     vec4 modelposition = vs_Pos + f(vs_Pos.xyz) * vs_Nor;
-    // vec4 modelposition = vs_Pos;
     modelposition = u_Model * modelposition;
-
-    fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);
-    fs_Nor = calcNor(fs_Nor.xyz);
-    fs_Col = vs_Col;
     fs_Pos = modelposition;
 
-    fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
+    // compute the new normal of the vertex
+    mat3 invTranspose = mat3(u_ModelInvTr);
+    fs_Nor = calcNor(invTranspose * vec3(vs_Nor));
 
-    gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is
-                                             // used to render the final positions of the geometry's vertices
+    // pass on data to be interpolated and passed on to frag shader
+    fs_Col = vs_Col;
+    fs_LightVec = lightPos - modelposition; 
+
+    gl_Position = u_ViewProj * modelposition;
 }
 
 /********** noise function definitions **********/
