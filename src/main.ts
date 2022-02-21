@@ -40,6 +40,9 @@ let vertexShaders: Array<Shader> = [];
 let fragmentShaders: Array<Shader> = [];
 
 let currentShaderProgram: ShaderProgram;
+let moonShaderProgram: ShaderProgram;
+
+let moonVertShader: Shader;
 
 let vertTimeCounter: number = 0;
 let fragTimeCounter: number = 0;
@@ -160,6 +163,10 @@ function main() {
     currentShaderProgram = new ShaderProgram([vertexShaders[prevVertexShader], fragmentShaders[prevFragmentShader]]);
     currentShaderProgram.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
 
+    // create shader to draw the moon with
+    moonVertShader = new Shader(gl.VERTEX_SHADER, require('./shaders/moon-vert.glsl'));
+    moonShaderProgram = new ShaderProgram([moonVertShader, fragmentShaders[prevFragmentShader]]);
+    moonShaderProgram.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
 
     // This function will be called every frame
     function tick() {
@@ -184,6 +191,10 @@ function main() {
 
             currentShaderProgram = new ShaderProgram([vertexShaders[prevVertexShader], fragmentShaders[prevFragmentShader]]);
             currentShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
+
+            // updates moon shader's fragment shader, not necessary
+            moonShaderProgram = new ShaderProgram([moonVertShader, fragmentShaders[prevFragmentShader]]);
+            moonShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
 
         // updates the geometry color
@@ -193,11 +204,16 @@ function main() {
             prevBlue = controls.blue;
 
             currentShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
+
+            moonShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
 
         // updates the current time
         currentShaderProgram.setVertTime(vertTimeCounter);
         currentShaderProgram.setFragTime(fragTimeCounter);
+
+        moonShaderProgram.setVertTime(vertTimeCounter);
+        moonShaderProgram.setFragTime(fragTimeCounter);
 
         vertTimeCounter += controls['Vert Tick Speed'];
         fragTimeCounter += controls['Frag Tick Speed'];
@@ -215,9 +231,18 @@ function main() {
         currentShaderProgram.setFractal(fractalParams);
 
         renderer.render(camera, currentShaderProgram, [
-            icosphere,
-            // square,
+            icosphere
         ]);
+
+        // set up shader for the moon
+        scaleVec = vec3.fromValues(0.45, 0.45, 0.45);
+        mat4.fromScaling(scaleMat, scaleVec);
+        moonShaderProgram.setModelMatrix(scaleMat);
+
+        renderer.render(camera, moonShaderProgram, [
+            icosphere
+        ]);
+
         stats.end();
 
         // Tell the browser to call `tick` again whenever it renders a new frame
