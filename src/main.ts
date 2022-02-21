@@ -60,12 +60,14 @@ function initializeVertexShaders(context: WebGL2RenderingContext) {
     const twistDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl'));
     const bumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/bump-map-vert.glsl'));
     const crinkledBumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/crinkled-bump-map-vert.glsl'));
+    const stripedBumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/striped-bump-map-vert.glsl'));
 
     vertexShaders.push(noop);
     vertexShaders.push(vertexDeformator);
     vertexShaders.push(twistDeformator);
     vertexShaders.push(bumpMap);
     vertexShaders.push(crinkledBumpMap);
+    vertexShaders.push(stripedBumpMap);
 }
 
 function initializeFragmentShaders(context: WebGL2RenderingContext) {
@@ -101,7 +103,8 @@ function main() {
                           'Vertex Deformator': 1,
                           'Twist Deformator': 2,
                           'Bump Map': 3,
-                          'Crinkled Bump Map': 4, });
+                          'Crinkled Bump Map': 4, 
+                          'Striped Bump Map': 5,});
 
     gui.add(controls, 'Fragment Shader', 
                         { 'Lambert': 0, 
