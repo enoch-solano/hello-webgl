@@ -166,7 +166,8 @@ function main() {
     // create shader to draw the moon with
     moonVertShader = new Shader(gl.VERTEX_SHADER, require('./shaders/moon-vert.glsl'));
     moonShaderProgram = new ShaderProgram([moonVertShader, fragmentShaders[prevFragmentShader]]);
-    moonShaderProgram.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
+    moonShaderProgram.setGeometryColor(vec4.fromValues(151.0 / 255.0, 158.0 / 255.0 , 184.0 / 255.0, 1));
+    // moonShaderProgram.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
 
     // This function will be called every frame
     function tick() {
@@ -194,7 +195,8 @@ function main() {
 
             // updates moon shader's fragment shader, not necessary
             moonShaderProgram = new ShaderProgram([moonVertShader, fragmentShaders[prevFragmentShader]]);
-            moonShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
+            moonShaderProgram.setGeometryColor(vec4.fromValues(151.0 / 255.0, 158.0 / 255.0 , 184.0 / 255.0, 1));
+            // moonShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
 
         // updates the geometry color
@@ -205,7 +207,7 @@ function main() {
 
             currentShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
 
-            moonShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
+            // moonShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
 
         // updates the current time
