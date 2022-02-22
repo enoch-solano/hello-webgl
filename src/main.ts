@@ -41,6 +41,11 @@ let fragmentShaders: Array<Shader> = [];
 
 let currentShaderProgram: ShaderProgram;
 let moonShaderProgram: ShaderProgram;
+let planetShaderProgram: ShaderProgram;
+
+const PLANET_VERT_SHADER = 5;
+const PLANET_FRAG_SHADER = 6;
+let planetSelected: boolean = false;
 
 let moonVertShader: Shader;
 
@@ -63,12 +68,14 @@ function initializeVertexShaders(context: WebGL2RenderingContext) {
     const twistDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl'));
     const bumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/bump-map-vert.glsl'));
     const crinkledBumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/crinkled-bump-map-vert.glsl'));
+    const planetVertShader = new Shader(context.VERTEX_SHADER, require('./shaders/planet-terrain-vert.glsl'));
 
     vertexShaders.push(noop);
     vertexShaders.push(vertexDeformator);
     vertexShaders.push(twistDeformator);
     vertexShaders.push(bumpMap);
     vertexShaders.push(crinkledBumpMap);
+    vertexShaders.push(planetVertShader);
 }
 
 function initializeFragmentShaders(context: WebGL2RenderingContext) {
@@ -78,6 +85,7 @@ function initializeFragmentShaders(context: WebGL2RenderingContext) {
     const fbmNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl'));
     const perlinNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/perlin-noisy-color-frag.glsl'));
     const worleyNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/worley-noisy-color-frag.glsl'));
+    const planetFragShader = new Shader(context.FRAGMENT_SHADER, require('./shaders/planet-terrain-frag.glsl'));
 
     fragmentShaders.push(lambert);
     fragmentShaders.push(blinnPhong);
@@ -85,6 +93,19 @@ function initializeFragmentShaders(context: WebGL2RenderingContext) {
     fragmentShaders.push(fbmNoisyColor);
     fragmentShaders.push(perlinNoisyColor);
     fragmentShaders.push(worleyNoisyColor);
+    fragmentShaders.push(planetFragShader);
+}
+
+function planetVertShaderSelected(vertShader: number) {
+    return vertShader == PLANET_VERT_SHADER;
+}
+
+function planetFragShaderSelected(fragShader: number) {
+    return fragShader == PLANET_FRAG_SHADER;
+}
+
+function planetIsSelected(vertShader: number, fragShader: number) {
+    return planetVertShaderSelected(vertShader) || planetFragShaderSelected(fragShader);
 }
 
 function main() {
@@ -104,7 +125,8 @@ function main() {
                           'Vertex Deformator': 1,
                           'Twist Deformator': 2,
                           'Bump Map': 3,
-                          'Crinkled Bump Map': 4, });
+                          'Crinkled Bump Map': 4,
+                          'Planet': PLANET_VERT_SHADER, });
 
     gui.add(controls, 'Fragment Shader', 
                         { 'Lambert': 0, 
@@ -112,11 +134,13 @@ function main() {
                           'Normals': 2, 
                           'Fractal Brownian Motion': 3,
                           'Fractal Perlin Noise': 4,
-                          'Fractal Worley Noise': 5, });
+                          'Fractal Worley Noise': 5,
+                          'Planet': PLANET_FRAG_SHADER, });
                       
     gui.add(controls, 'Tesselations', 0, 8).step(1);
     gui.add(controls, 'Vert Tick Speed', 0, 5).step(1);
     gui.add(controls, 'Frag Tick Speed', 0, 5).step(1);
+
 
 
     let colorModifiers = gui.addFolder("Modify Color");
@@ -169,6 +193,12 @@ function main() {
     moonShaderProgram.setGeometryColor(vec4.fromValues(151.0 / 255.0, 158.0 / 255.0 , 184.0 / 255.0, 1));
     // moonShaderProgram.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
 
+    // create shader to draw the planet with
+    const planetVertShader = new Shader(gl.VERTEX_SHADER, require('./shaders/planet-terrain-vert.glsl'));
+    const planetFragShader = new Shader(gl.FRAGMENT_SHADER, require('./shaders/planet-terrain-frag.glsl'));
+    planetShaderProgram = new ShaderProgram([planetVertShader, planetFragShader]);
+    planetShaderProgram.setGeometryColor(vec4.fromValues(prevRed / 255.0, prevGreen / 255.0 , prevBlue / 255.0, 1));
+
     // This function will be called every frame
     function tick() {
         camera.update();
@@ -184,8 +214,41 @@ function main() {
             icosphere.create();
         }
         
+        // handles vertex shader update
+        if (controls['Vertex Shader'] != prevVertexShader) {
+            planetSelected = planetVertShaderSelected(controls['Vertex Shader']);
 
-        // updates current shader
+            if (planetSelected) {
+                // update fragment shader IF it's not already a planet shader
+                if (!planetFragShaderSelected(controls['Fragment Shader'])) {
+                    controls['Fragment Shader'] = PLANET_FRAG_SHADER;
+                    prevFragmentShader = controls['Fragment Shader'];
+                }
+            } else if (planetFragShaderSelected(controls['Fragment Shader'])) {
+                controls['Fragment Shader'] = 0;
+                prevFragmentShader = controls['Fragment Shader'];
+            }
+        }
+
+        // handles fragment shader update
+        if (controls['Fragment Shader'] != prevFragmentShader) {
+            planetSelected = planetFragShaderSelected(controls['Fragment Shader']);
+
+            if (planetSelected) {
+                // update vertex shader IF it's not already a planet shader
+                if (!planetVertShaderSelected(controls['Vertex Shader'])) {
+                    controls['Vertex Shader'] = PLANET_VERT_SHADER;
+                    prevVertexShader = controls['Vertex Shader'];
+                }
+            } else if (planetVertShaderSelected(controls['Vertex Shader'])) {
+                // attempting to change the planet fragment shader, while
+                // the vertex shader is planet
+                controls['Fragment Shader'] = prevFragmentShader;
+                planetSelected = true;
+            }
+        }
+
+        // handles shader program update
         if (controls['Vertex Shader'] != prevVertexShader || controls['Fragment Shader'] != prevFragmentShader) {
             prevVertexShader = controls['Vertex Shader'];
             prevFragmentShader = controls['Fragment Shader'];
@@ -249,6 +312,8 @@ function main() {
 
         // Tell the browser to call `tick` again whenever it renders a new frame
         requestAnimationFrame(tick);
+
+        gui.updateDisplay();
     }
 
     window.addEventListener('resize', function () {
