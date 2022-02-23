@@ -43,8 +43,9 @@ let currentShaderProgram: ShaderProgram;
 let moonShaderProgram: ShaderProgram;
 let planetShaderProgram: ShaderProgram;
 
-const PLANET_VERT_SHADER = 5;
-const PLANET_FRAG_SHADER = 6;
+const PLANET_VERT_SHADER = 6;
+const PLANET_FRAG_SHADER = 7;
+
 let planetSelected: boolean = false;
 
 let moonVertShader: Shader;
@@ -57,6 +58,9 @@ let scaleMat: mat4 = mat4.create();
 
 let fractalParams: vec2 = vec2.create();
 
+const NOISE_VIZ_VERT = 5;
+const NOISE_VIZ_FRAG = 6;
+
 function loadScene() {
     icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.Tesselations);
     icosphere.create();
@@ -68,6 +72,7 @@ function initializeVertexShaders(context: WebGL2RenderingContext) {
     const twistDeformator = new Shader(context.VERTEX_SHADER, require('./shaders/twist-deformator-vert.glsl'));
     const bumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/bump-map-vert.glsl'));
     const crinkledBumpMap = new Shader(context.VERTEX_SHADER, require('./shaders/crinkled-bump-map-vert.glsl'));
+    const noiseVisualizer = new Shader(context.VERTEX_SHADER, require('./shaders/noise-visualizer-vert.glsl'));
     const planetVertShader = new Shader(context.VERTEX_SHADER, require('./shaders/planet-terrain-vert.glsl'));
 
     vertexShaders.push(noop);
@@ -75,6 +80,7 @@ function initializeVertexShaders(context: WebGL2RenderingContext) {
     vertexShaders.push(twistDeformator);
     vertexShaders.push(bumpMap);
     vertexShaders.push(crinkledBumpMap);
+    vertexShaders.push(noiseVisualizer);
     vertexShaders.push(planetVertShader);
 }
 
@@ -85,6 +91,7 @@ function initializeFragmentShaders(context: WebGL2RenderingContext) {
     const fbmNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/fbm-noisy-color-frag.glsl'));
     const perlinNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/perlin-noisy-color-frag.glsl'));
     const worleyNoisyColor = new Shader(context.FRAGMENT_SHADER, require('./shaders/worley-noisy-color-frag.glsl'));
+    const noiseVisualizer = new Shader(context.FRAGMENT_SHADER, require('./shaders/noise-visualizer-frag.glsl'));
     const planetFragShader = new Shader(context.FRAGMENT_SHADER, require('./shaders/planet-terrain-frag.glsl'));
 
     fragmentShaders.push(lambert);
@@ -93,6 +100,7 @@ function initializeFragmentShaders(context: WebGL2RenderingContext) {
     fragmentShaders.push(fbmNoisyColor);
     fragmentShaders.push(perlinNoisyColor);
     fragmentShaders.push(worleyNoisyColor);
+    fragmentShaders.push(noiseVisualizer);
     fragmentShaders.push(planetFragShader);
 }
 
@@ -126,6 +134,7 @@ function main() {
                           'Twist Deformator': 2,
                           'Bump Map': 3,
                           'Crinkled Bump Map': 4,
+                          'Noise Visualizer': NOISE_VIZ_VERT,
                           'Planet': PLANET_VERT_SHADER, });
 
     gui.add(controls, 'Fragment Shader', 
@@ -135,6 +144,7 @@ function main() {
                           'Fractal Brownian Motion': 3,
                           'Fractal Perlin Noise': 4,
                           'Fractal Worley Noise': 5,
+                          'Noise Visualizer': NOISE_VIZ_FRAG,
                           'Planet': PLANET_FRAG_SHADER, });
                       
     gui.add(controls, 'Tesselations', 0, 8).step(1);
@@ -225,7 +235,11 @@ function main() {
                     prevFragmentShader = controls['Fragment Shader'];
                 }
             } else if (planetFragShaderSelected(controls['Fragment Shader'])) {
-                controls['Fragment Shader'] = 0;
+                controls['Fragment Shader'] = controls['Vertex Shader'] == NOISE_VIZ_VERT ? NOISE_VIZ_FRAG : 0;
+                // controls['Fragment Shader'] = 0;
+                prevFragmentShader = controls['Fragment Shader'];
+            } else if (controls['Vertex Shader'] == NOISE_VIZ_VERT || prevVertexShader == NOISE_VIZ_VERT) {
+                controls['Fragment Shader'] = controls['Vertex Shader'] == NOISE_VIZ_VERT ? NOISE_VIZ_FRAG : 0;
                 prevFragmentShader = controls['Fragment Shader'];
             }
         }
@@ -245,6 +259,9 @@ function main() {
                 // the vertex shader is planet
                 controls['Fragment Shader'] = prevFragmentShader;
                 planetSelected = true;
+            } else if (controls['Fragment Shader'] == NOISE_VIZ_FRAG || prevFragmentShader == NOISE_VIZ_FRAG) {
+                controls['Vertex Shader'] = controls['Fragment Shader'] == NOISE_VIZ_FRAG ? NOISE_VIZ_VERT : 0;
+                prevVertexShader = controls['Vertex Shader'];
             }
         }
 

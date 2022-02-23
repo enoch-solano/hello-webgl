@@ -1,9 +1,5 @@
 #version 300 es
 
-#define BUMPINESS 0.1
-#define FREQ 4.0
-#define EPSILON 0.1
-
 uniform mat4 u_Model;       // The matrix that defines the transformation of the
                             // object we're rendering
 
@@ -26,36 +22,33 @@ out vec4 fs_Pos;            // The position of each vertex
 
 const vec4 lightPos = vec4(5, 5, 3, 1); 
 
-float f(vec3 pos);      // returns the amount to offset the vertex position
-vec4 calcNor(vec3 pos, vec3 nor);
-
 float perlinNoise(vec3 P, float samplingFreq);
 
-void main() {
-    vec3 noiseSeed = vs_Pos.xyz; // + 0.1 * 0.05 * vec3(0, 0, u_VertTime);
+// returns a psuedo-random between 0 and 1
+float noise(vec3 P, float samplingFreq) {
+    return perlinNoise(P, samplingFreq);
+}
 
-    // offset the vertex position by the bump map as defined by perlin noise
-    vec4 modelposition = vs_Pos; // + f(noiseSeed) * vs_Nor;
+void main() {
+    vec4 modelposition = vs_Pos;
     modelposition = u_Model * modelposition;
     fs_Pos = modelposition;
 
     // compute the new normal of the vertex
     mat3 invTranspose = mat3(u_ModelInvTr);
-    fs_Nor = calcNor(noiseSeed, invTranspose * vec3(vs_Nor));
+    fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);
 
-    // pass on data to be interpolated and passed on to frag shader
-    float noise = perlinNoise(vs_Pos.xyz, 32.0);
-    noise = (noise);
+    vec3 noiseSeed = vs_Pos.xyz; 
+    float value = noise(noiseSeed, 32.0);
 
-    if (noise < 0.0) {
+    // checks for out of bounds
+    if (value < 0.0) {
         fs_Col = vec4(1, 0, 1, 1);
-    } else if (noise > 1.0) {
+    } else if (value > 1.0) {
         fs_Col = vec4(0, 1, 0, 1);
     } else {
-        fs_Col = vec4(vec3(noise), 1);
+        fs_Col = vec4(vec3(value), 1);
     }
-    
-    fs_LightVec = lightPos - modelposition; 
 
     gl_Position = u_ViewProj * modelposition;
 }
@@ -83,37 +76,6 @@ float perlinNoise(vec3 P, float samplingFreq) {
 }
 
 /********** helper function definitions **********/
-
-// TURBULENCE TEXTURE
-float turbulence(vec3 pos, float baseFreq) {
-    float t = -0.5;
-
-    for (float f = baseFreq; f < 16.0; f *= 2.0) {
-        t += abs(perlinNoise(pos, f) / f);
-    }
-
-    return t;
-}
-    
-
-// offset to create a crinkled bump map as defined here
-// https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch05.html
-float f(vec3 pos) {
-    return -0.10 * turbulence(pos, 1.0);
-}
-
-// computes the normal as defined here
-// https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch05.html
-vec4 calcNor(vec3 pos, vec3 nor) {
-    float F_0 = f(pos);
-    float F_x = f(pos + vec3(EPSILON, 0, 0));
-    float F_y = f(pos + vec3(0, EPSILON, 0));
-    float F_z = f(pos + vec3(0, 0, EPSILON));
-
-    vec3 dF = (vec3(F_x, F_y, F_z) - vec3(F_0)) / EPSILON;
-
-    return vec4(normalize(nor - dF), 0);
-}
 
 vec3 random3(vec3 p) {
     return fract(sin(vec3(dot(p, vec3(127.1f, 311.7f, 420.69f)),
