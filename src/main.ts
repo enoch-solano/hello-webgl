@@ -61,6 +61,8 @@ let fractalParams: vec2 = vec2.create();
 const NOISE_VIZ_VERT = 5;
 const NOISE_VIZ_FRAG = 6;
 
+const BLINN_PHONG_SHADER = 1;
+
 function loadScene() {
     icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.Tesselations);
     icosphere.create();
@@ -139,7 +141,7 @@ function main() {
 
     gui.add(controls, 'Fragment Shader', 
                         { 'Lambert': 0, 
-                          'Blinn Phong': 1, 
+                          'Blinn Phong': BLINN_PHONG_SHADER, 
                           'Normals': 2, 
                           'Fractal Brownian Motion': 3,
                           'Fractal Perlin Noise': 4,
@@ -267,6 +269,8 @@ function main() {
 
         // handles shader program update
         if (controls['Vertex Shader'] != prevVertexShader || controls['Fragment Shader'] != prevFragmentShader) {
+            gui.updateDisplay();
+            
             prevVertexShader = controls['Vertex Shader'];
             prevFragmentShader = controls['Fragment Shader'];
 
@@ -274,7 +278,7 @@ function main() {
             currentShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
 
             // updates moon shader's fragment shader, not necessary
-            moonShaderProgram = new ShaderProgram([moonVertShader, fragmentShaders[prevFragmentShader]]);
+            moonShaderProgram = new ShaderProgram([moonVertShader, fragmentShaders[BLINN_PHONG_SHADER]]);
             moonShaderProgram.setGeometryColor(vec4.fromValues(151.0 / 255.0, 158.0 / 255.0 , 184.0 / 255.0, 1));
             // moonShaderProgram.setGeometryColor(vec4.fromValues(controls.red / 255.0, controls.green / 255.0, controls.blue / 255.0, 1.));
         }
@@ -329,8 +333,6 @@ function main() {
 
         // Tell the browser to call `tick` again whenever it renders a new frame
         requestAnimationFrame(tick);
-
-        gui.updateDisplay();
     }
 
     window.addEventListener('resize', function () {

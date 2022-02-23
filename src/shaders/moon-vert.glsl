@@ -43,7 +43,7 @@ void main() {
     mat4 spinRot = rotateY(amount);         // rotation matrix to spin the moon
     modelposition = spinRot * modelposition;
 
-    float orbitalRadius = 3.0;
+    float orbitalRadius = 5.0;
     mat4 orbitTrans = translate(vec3(orbitalRadius, 0, 0));
     modelposition = orbitTrans * modelposition;
 

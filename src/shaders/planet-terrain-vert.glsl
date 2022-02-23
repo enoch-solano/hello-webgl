@@ -2,7 +2,7 @@
 
 #define BUMPINESS 0.1
 #define FREQ 4.0
-#define EPSILON 0.1
+#define EPSILON 1.0
 
 uniform mat4 u_Model;       // The matrix that defines the transformation of the
                             // object we're rendering
@@ -24,37 +24,28 @@ out vec4 fs_LightVec;       // The direction in which our virtual light lies, re
 out vec4 fs_Col;            // The color of each vertex
 out vec4 fs_Pos;            // The position of each vertex
 
+out float fs_Elevation;
+
 const vec4 lightPos = vec4(5, 5, 3, 1); 
 
 float f(vec3 pos);      // returns the amount to offset the vertex position
 vec4 calcNor(vec3 pos, vec3 nor);
 
-float perlinNoise(vec3 P, float samplingFreq);
-
 void main() {
-    vec3 noiseSeed = vs_Pos.xyz; // + 0.1 * 0.05 * vec3(0, 0, u_VertTime);
+    vec3 noiseSeed = vs_Pos.xyz; // + 0.1 * 0.05 * vec3(0, u_VertTime, 0);
 
     // offset the vertex position by the bump map as defined by perlin noise
-    vec4 modelposition = vs_Pos; // + f(noiseSeed) * vs_Nor;
+    fs_Elevation = f(noiseSeed);
+    vec4 modelposition = vs_Pos + 0.3 * fs_Elevation * vs_Nor;
     modelposition = u_Model * modelposition;
-    fs_Pos = modelposition;
 
     // compute the new normal of the vertex
     mat3 invTranspose = mat3(u_ModelInvTr);
     fs_Nor = calcNor(noiseSeed, invTranspose * vec3(vs_Nor));
 
     // pass on data to be interpolated and passed on to frag shader
-    float noise = perlinNoise(vs_Pos.xyz, 32.0);
-    noise = (noise);
-
-    if (noise < 0.0) {
-        fs_Col = vec4(1, 0, 1, 1);
-    } else if (noise > 1.0) {
-        fs_Col = vec4(0, 1, 0, 1);
-    } else {
-        fs_Col = vec4(vec3(noise), 1);
-    }
-    
+    fs_Pos = modelposition;
+    fs_Col = vs_Col;
     fs_LightVec = lightPos - modelposition; 
 
     gl_Position = u_ViewProj * modelposition;
@@ -82,24 +73,38 @@ float perlinNoise(vec3 P, float samplingFreq) {
     return clamp(sum + 0.5, 0.0, 1.0);
 }
 
-/********** helper function definitions **********/
+// compute elevation as described here:
+// https://www.redblobgames.com/maps/terrain-from-noise/
+float elevation(vec3 pos) {
+    float freq = 1.618;
+    float amp = 0.5;
+    int numOctaves = 5;
 
-// TURBULENCE TEXTURE
-float turbulence(vec3 pos, float baseFreq) {
-    float t = -0.5;
+    float elevation = 0.0;
+    float ampTotal = 0.0;
 
-    for (float f = baseFreq; f < 16.0; f *= 2.0) {
-        t += abs(perlinNoise(pos, f) / f);
+    for (int i = 0; i < numOctaves; i++) {
+        elevation += amp * perlinNoise(pos, freq);
+        ampTotal += amp;
+
+        amp *= 0.5;
+        freq *= 1.618;
     }
 
-    return t;
-}
-    
+    // normalized back to be between 0 and 1
+    elevation = clamp(elevation / ampTotal, 0.0, 1.0);
 
-// offset to create a crinkled bump map as defined here
-// https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch05.html
+    float alpha = 1.2;
+    float exponent = 1.7;
+
+    return pow(alpha * elevation, exponent);
+}
+
+/********** helper function definitions **********/
+
+// offset to create a bump map as defined here
 float f(vec3 pos) {
-    return -0.10 * turbulence(pos, 1.0);
+    return elevation(pos);
 }
 
 // computes the normal as defined here
