@@ -104,6 +104,10 @@ class ShaderProgram {
         }
     }
 
+    setGeometryColorRGB(red: number, green: number, blue: number) {
+        this.setGeometryColor(vec4.fromValues(red / 255.0, green / 255.0, blue / 255.0, 1.));
+    }
+
     setTime(time: number) {
         this.use();
 
@@ -126,6 +130,11 @@ class ShaderProgram {
         if (this.unifFragTime !== -1) {
             gl.uniform1i(this.unifFragTime, time);
         }
+    }
+
+    setTimes(vertTime: number, fragTime: number) { 
+        this.setVertTime(vertTime);
+        this.setFragTime(fragTime);
     }
 
     setWarp(warp: vec2) {

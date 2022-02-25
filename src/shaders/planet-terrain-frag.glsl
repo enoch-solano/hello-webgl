@@ -1,6 +1,6 @@
 #version 300 es
 
-#define SHININESS 40.0
+#define SHININESS 20.0
 
 precision highp float;
 

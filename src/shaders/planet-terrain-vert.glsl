@@ -3,6 +3,7 @@
 #define BUMPINESS 0.1
 #define FREQ 4.0
 #define EPSILON 1.0
+#define MAX_ELEVATION 0.35
 
 uniform mat4 u_Model;       // The matrix that defines the transformation of the
                             // object we're rendering
@@ -36,7 +37,7 @@ void main() {
 
     // offset the vertex position by the bump map as defined by perlin noise
     fs_Elevation = f(noiseSeed);
-    vec4 modelposition = vs_Pos + 0.3 * fs_Elevation * vs_Nor;
+    vec4 modelposition = vs_Pos + MAX_ELEVATION * fs_Elevation * vs_Nor;
     modelposition = u_Model * modelposition;
 
     // compute the new normal of the vertex
