@@ -31,7 +31,8 @@ const vec4 lightPos = vec4(5, 5, 3, 1);
 
 float f(vec3 pos);      // returns the amount to offset the vertex position
 vec4 calcNor(vec3 pos, vec3 nor);
-float terracize(float e, float numTerraces);
+
+mat4 rotateY(float theta);
 
 void main() {
     vec3 noiseSeed = vs_Pos.xyz; // + 0.1 * 0.05 * vec3(0, u_VertTime, 0);
@@ -41,15 +42,20 @@ void main() {
     vec4 modelposition = vs_Pos + fs_Elevation * vs_Nor;
     modelposition = u_Model * modelposition;
 
+    // rotate planet about y-axis
+    float amount = float(u_VertTime) * 0.005;
+    mat4 spinRot = rotateY(amount);
+    modelposition = spinRot * modelposition;
+
     // compute the new normal of the vertex
-    mat3 invTranspose = mat3(u_ModelInvTr);
+    mat3 invTranspose = mat3(spinRot * u_ModelInvTr);
     fs_Nor = calcNor(noiseSeed, invTranspose * vec3(vs_Nor));
 
     // pass on data to be interpolated and passed on to frag shader
     fs_Pos = modelposition;
     fs_Col = vs_Col;
     fs_LightVec = lightPos - modelposition; 
-    fs_Elevation /= 0.35;
+    fs_Elevation /= 0.35;   // normalize elevation back to be in [0,1] for frag shader
 
     gl_Position = u_ViewProj * modelposition;
 }
@@ -125,6 +131,13 @@ vec4 calcNor(vec3 pos, vec3 nor) {
     vec3 dF = (vec3(F_x, F_y, F_z) - vec3(F_0)) / EPSILON;
 
     return vec4(normalize(nor - dF), 0);
+}
+
+mat4 rotateY(float theta) {
+    float c = cos(theta);
+    float s = sin(theta);
+
+    return mat4(vec4(c,0,-s,0), vec4(0,1,0,0), vec4(s,0,c,0), vec4(0,0,0,1));
 }
 
 vec3 random3(vec3 p) {
