@@ -38,6 +38,7 @@ const PLANET_FRAG_SHADER = 7;
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
     Tesselations: 7,
+
     'Load Scene': loadScene, // A function pointer, essentially
 
     // base color of geometry //
@@ -65,7 +66,9 @@ const controls = {
     // elevation controls //
     'Elevation Octaves': 6,
     'Elevation Base Freq': 2,
+    'Elevation Scale': 0.35,
     'Exponent': 0.5,
+    'Terraces': 12,
 
     // elevation octave amplitudes //
     'Octave 1': 1.0,
@@ -195,7 +198,9 @@ function addPlanetMods(gui: DAT.GUI) {
     planetModsFolder = gui.addFolder("Modify Planet");
     planetModsFolder.add(controls, 'Elevation Octaves', 1, 6).step(1);
     planetModsFolder.add(controls, 'Elevation Base Freq', 0, 4).step(0.01);
+    planetModsFolder.add(controls, 'Elevation Scale', 0, 2).step(0.01);
     planetModsFolder.add(controls, 'Exponent', 0.5, 15).step(0.01);
+    planetModsFolder.add(controls, 'Terraces', 1, 32).step(1);
 
     addElevationOctavesAmps(planetModsFolder, controls['Elevation Octaves']);
 
@@ -299,7 +304,7 @@ function main() {
     // Initial call to load scene
     loadScene();
 
-    const camera = new Camera(vec3.fromValues(0, 0, 5), vec3.fromValues(0, 0, 0));
+    const camera = new Camera(vec3.fromValues(0, 0, 7.5), vec3.fromValues(0, 0, 0));
     const renderer = new OpenGLRenderer(canvas);
     renderer.setClearColor(0.2, 0.2, 0.2, 1);
     gl.enable(gl.DEPTH_TEST);

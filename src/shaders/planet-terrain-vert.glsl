@@ -31,12 +31,13 @@ const vec4 lightPos = vec4(5, 5, 3, 1);
 
 float f(vec3 pos);      // returns the amount to offset the vertex position
 vec4 calcNor(vec3 pos, vec3 nor);
+float terracize(float e, float numTerraces);
 
 void main() {
     vec3 noiseSeed = vs_Pos.xyz; // + 0.1 * 0.05 * vec3(0, u_VertTime, 0);
 
     // offset the vertex position by the bump map as defined by perlin noise
-    fs_Elevation = f(noiseSeed);
+    fs_Elevation = terracize(f(noiseSeed), 12.0);
     vec4 modelposition = vs_Pos + MAX_ELEVATION * fs_Elevation * vs_Nor;
     modelposition = u_Model * modelposition;
 
@@ -97,8 +98,12 @@ float elevation(vec3 pos) {
 
     float alpha = 1.2;
     float exponent = 1.7;
-
+    
     return pow(alpha * elevation, exponent);
+}
+
+float terracize(float e, float numTerraces) {
+    return round(e * numTerraces) / numTerraces;
 }
 
 /********** helper function definitions **********/
