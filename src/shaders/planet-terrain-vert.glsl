@@ -37,8 +37,8 @@ void main() {
     vec3 noiseSeed = vs_Pos.xyz; // + 0.1 * 0.05 * vec3(0, u_VertTime, 0);
 
     // offset the vertex position by the bump map as defined by perlin noise
-    fs_Elevation = terracize(f(noiseSeed), 12.0);
-    vec4 modelposition = vs_Pos + MAX_ELEVATION * fs_Elevation * vs_Nor;
+    fs_Elevation = f(noiseSeed);
+    vec4 modelposition = vs_Pos + fs_Elevation * vs_Nor;
     modelposition = u_Model * modelposition;
 
     // compute the new normal of the vertex
@@ -49,6 +49,7 @@ void main() {
     fs_Pos = modelposition;
     fs_Col = vs_Col;
     fs_LightVec = lightPos - modelposition; 
+    fs_Elevation /= 0.35;
 
     gl_Position = u_ViewProj * modelposition;
 }
@@ -110,7 +111,7 @@ float terracize(float e, float numTerraces) {
 
 // offset to create a bump map as defined here
 float f(vec3 pos) {
-    return elevation(pos);
+    return 0.35 * terracize(elevation(pos), 12.0);
 }
 
 // computes the normal as defined here
