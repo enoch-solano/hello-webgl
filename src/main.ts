@@ -65,9 +65,9 @@ const controls = {
 
     // elevation controls //
     'Elevation Octaves': 6,
-    'Elevation Base Freq': 2,
+    'Elevation Base Freq': 1.62,
     'Elevation Scale': 0.35,
-    'Exponent': 0.5,
+    'Exponent': 1.7,
     'Terraces': 12,
 
     // elevation octave amplitudes //
@@ -181,7 +181,7 @@ function initializeGUI(gui: DAT.GUI) {
     scaleModifiers.add(controls, 'z-Scale', 0, 3).step(0.1);
 
     // increase width of gui
-    gui.width += 25;
+    gui.width += 25 + 35;
 }
 
 /****************** helper functions to add folders ******************/
@@ -199,12 +199,12 @@ function addPlanetMods(gui: DAT.GUI) {
     planetModsFolder.add(controls, 'Elevation Octaves', 1, 6).step(1);
     planetModsFolder.add(controls, 'Elevation Base Freq', 0, 4).step(0.01);
     planetModsFolder.add(controls, 'Elevation Scale', 0, 2).step(0.01);
-    planetModsFolder.add(controls, 'Exponent', 0.5, 15).step(0.01);
+    planetModsFolder.add(controls, 'Exponent', 0, 4).step(0.01);
     planetModsFolder.add(controls, 'Terraces', 1, 32).step(1);
+    planetModsFolder.open();
 
     addElevationOctavesAmps(planetModsFolder, controls['Elevation Octaves']);
 
-    gui.width += 35;
     gui.updateDisplay();
 
     planetModsFolderAdded = true;
@@ -241,7 +241,6 @@ function removeFolder(folder: DAT.GUI, subFolder: DAT.GUI) {
 }
 
 function removePlanetMods(gui: DAT.GUI) {
-    gui.width -= 35;
     planetModsFolderAdded = removeFolder(gui, planetModsFolder);
 }
 
@@ -454,6 +453,25 @@ function main() {
         // update fractal parameters
         fractalParams = vec2.fromValues(Math.pow(2, controls['Base Frequency']), 0.5);
         currentShaderProgram.setFractal(fractalParams);
+
+        // update elevation parameters
+        currentShaderProgram.setElevationParams([
+            controls['Elevation Octaves'],
+            controls['Elevation Base Freq'],
+            controls['Elevation Scale'],
+            controls.Exponent,
+            controls.Terraces
+        ]);
+
+        // update octave amplitudes
+        currentShaderProgram.setOctaveAmps([
+            controls['Octave 1'],
+            controls['Octave 2'],
+            controls['Octave 3'],
+            controls['Octave 4'],
+            controls['Octave 5'],
+            controls['Octave 6'],
+        ]);
 
         renderer.render(camera, currentShaderProgram, [
             icosphere

@@ -36,6 +36,8 @@ class ShaderProgram {
     unifOctaves: WebGLUniformLocation;
     unifFractal: WebGLUniformLocation;
     unifCamPos: WebGLUniformLocation;
+    unifElevParams: WebGLUniformLocation;
+    unifOctaveAmps: WebGLUniformLocation;
 
     constructor(shaders: Array<Shader>) {
         this.prog = gl.createProgram();
@@ -64,6 +66,8 @@ class ShaderProgram {
         this.unifOctaves = gl.getUniformLocation(this.prog, "u_Octaves");
         this.unifFractal = gl.getUniformLocation(this.prog, "u_Fractal");
         this.unifCamPos =  gl.getUniformLocation(this.prog, "u_CamPos");
+        this.unifElevParams = gl.getUniformLocation(this.prog, "u_ElevationParams");
+        this.unifOctaveAmps = gl.getUniformLocation(this.prog, "u_OctaveAmps");
     }
 
     use() {
@@ -166,6 +170,22 @@ class ShaderProgram {
 
         if (this.unifCamPos !== -1) {
             gl.uniform3fv(this.unifCamPos, pos);
+        }
+    }
+
+    setElevationParams(params: number[]) {
+        this.use();
+
+        if (this.unifElevParams !== -1) {
+            gl.uniform1fv(this.unifElevParams, params, 0, params.length);
+        }
+    }
+
+    setOctaveAmps(amps: number[]) {
+        this.use();
+
+        if (this.unifOctaveAmps !== -1) {
+            gl.uniform1fv(this.unifOctaveAmps, amps, 0, amps.length);
         }
     }
 

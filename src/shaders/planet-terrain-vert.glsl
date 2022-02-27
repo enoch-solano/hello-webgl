@@ -5,6 +5,12 @@
 #define EPSILON 1.0
 #define MAX_ELEVATION 0.35
 
+#define ELEVATION_OCTAVES 0
+#define ELEVATION_BASE_FREQ 1
+#define ELEVATION_SCALE 2
+#define EXPONENT 3
+#define TERRACES 4
+
 uniform mat4 u_Model;       // The matrix that defines the transformation of the
                             // object we're rendering
 
@@ -15,6 +21,9 @@ uniform mat4 u_ModelInvTr;  // The inverse transpose of the model matrix.
 uniform mat4 u_ViewProj;    // The matrix that defines the camera's transformation
 
 uniform int u_VertTime;
+
+uniform float[5] u_ElevationParams;
+uniform float[6] u_OctaveAmps;
 
 in vec4 vs_Pos;             // The array of vertex positions passed to the shader
 in vec4 vs_Nor;             // The array of vertex normals passed to the shader
@@ -55,13 +64,16 @@ void main() {
     fs_Pos = modelposition;
     fs_Col = vs_Col;
     fs_LightVec = lightPos - modelposition; 
-    fs_Elevation /= 0.35;   // normalize elevation back to be in [0,1] for frag shader
+
+    // normalize elevation back to be in [0,1] for frag shader
+    fs_Elevation /= u_ElevationParams[ELEVATION_SCALE];
 
     gl_Position = u_ViewProj * modelposition;
 }
 
 /********** noise function definitions **********/
 
+vec3 random3(vec3 p);
 float surflet(vec3 P, vec3 Gp_ijk);
 
 // returns a number between 0 and 1
@@ -85,18 +97,20 @@ float perlinNoise(vec3 P, float samplingFreq) {
 // compute elevation as described here:
 // https://www.redblobgames.com/maps/terrain-from-noise/
 float elevation(vec3 pos) {
-    float freq = 1.618;
+    float freq = u_ElevationParams[ELEVATION_BASE_FREQ];
     float amp = 0.5;
-    int numOctaves = 5;
+    int numOctaves = int(u_ElevationParams[ELEVATION_OCTAVES]);
 
     float elevation = 0.0;
     float ampTotal = 0.0;
 
     for (int i = 0; i < numOctaves; i++) {
-        elevation += amp * perlinNoise(pos, freq);
-        ampTotal += amp;
+        // random offset helps remove artifacts along the axis
+        vec3 randOffset = random3(vec3(i));
 
-        amp *= 0.5;
+        elevation += u_OctaveAmps[i] * perlinNoise(pos + randOffset, freq);
+        ampTotal += u_OctaveAmps[i];
+
         freq *= 1.618;
     }
 
@@ -104,7 +118,7 @@ float elevation(vec3 pos) {
     elevation = clamp(elevation / ampTotal, 0.0, 1.0);
 
     float alpha = 1.2;
-    float exponent = 1.7;
+    float exponent = u_ElevationParams[EXPONENT];
     
     return pow(alpha * elevation, exponent);
 }
@@ -117,7 +131,9 @@ float terracize(float e, float numTerraces) {
 
 // offset to create a bump map as defined here
 float f(vec3 pos) {
-    return 0.35 * terracize(elevation(pos), 12.0);
+    float maxHeight = u_ElevationParams[ELEVATION_SCALE];
+    float numTerraces = u_ElevationParams[TERRACES];
+    return maxHeight * terracize(elevation(pos), numTerraces);
 }
 
 // computes the normal as defined here
@@ -160,7 +176,6 @@ float surflet(vec3 P, vec3 Gp_ijk) {
     
     // Get the random vector for the grid point
     vec3 gradient = random3(Gp_ijk);
-    
     
     // Get the noise contribution from this grid point
     float n_ijk = dot(diff, gradient);
