@@ -30,7 +30,7 @@ float f(vec3 pos);      // returns the amount to offset the vertex position
 vec4 calcNor(vec3 pos, vec3 nor);
 
 void main() {
-    vec3 noiseSeed = vs_Pos.xyz; // + 0.1 * 0.05 * vec3(0, 0, u_VertTime);
+    vec3 noiseSeed = vs_Pos.xyz + 0.1 * 0.05 * vec3(0, 0, u_VertTime);
 
     // offset the vertex position by the bump map as defined by perlin noise
     vec4 modelposition = vs_Pos + f(noiseSeed) * vs_Nor;
